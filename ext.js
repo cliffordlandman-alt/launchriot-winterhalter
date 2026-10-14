@@ -3,7 +3,7 @@ SRC.zcal='Zoho Calendar';SRC.manual='Added manually';
 D.profile=D.profile||{name:'Gareth',role:'Managing Director',email:'',phone:'',photo:''};
 D.staff=D.staff||[];D.staffMan=D.staffMan||{};
 const sst=x=>D.staffMan[x.id]||(x.auto?'Done':x.st||'Open');
-D.settings=D.settings||{notify:{brief:true,urgent:true,friday:true,approvals:true},vip:[],keywords:['urgent','quote','breakdown','order','invoice']};
+D.settings=D.settings||{notify:{brief:true,urgent:true,friday:true,approvals:true},vip:[],keywords:['urgent','quote','breakdown','order','invoice'],staff:[],staff_domains:[]};D.settings.staff=D.settings.staff||[];D.settings.staff_domains=D.settings.staff_domains||[];
 // tabs: drop sales figures page label, add Profile + Settings
 (function(){const i=TABS.findIndex(t=>t[0]=='sales');if(i>-1)TABS[i]=['sales','Pipeline','MS'];const c=TABS.findIndex(t=>t[0]=='connections');TABS.splice(TABS.findIndex(t=>t[0]=='tasks')+1,0,['staff','Staff tasks','MAS']);TABS.splice(TABS.findIndex(t=>t[0]=='connections'),0,['profile','Profile','MAS'],['settings','Settings','MAS']);})();
 const greet=()=>{const h=+new Date().toLocaleString('en-GB',{timeZone:'Asia/Dubai',hour:'2-digit',hour12:false});return h<12?'Good morning':h<17?'Good afternoon':'Good evening'};
@@ -12,7 +12,7 @@ const first=()=>esc((D.profile.name||'Gareth').split(' ')[0]);
 function score(m){const s=D.settings,f=(m.from||'').toLowerCase(),t=((m.subj||'')+' '+(m.sum||'')).toLowerCase();let n=0,why=[];
  if(s.vip.some(v=>v&&f.includes(v.toLowerCase()))){n+=3;why.push('VIP')}
  const kw=s.keywords.filter(k=>k&&t.includes(k.toLowerCase()));if(kw.length){n+=2;why.push('“'+kw[0]+'”')}
- if(m.unread){n+=1;why.push('Unread')}if(m.needs_reply){n+=2;why.push('Reply needed')}if(m.pri=='High'){n+=2;why.push('High')}return {n,why}}
+ if(m.unread){n+=1;why.push('Unread')}if(+m.importance>=60){n+=2}(m.reasons||[]).slice(0,3).forEach(x=>why.push(esc(x)));if(m.needs_reply){n+=2;why.push('Reply needed')}if(m.pri=='High'){n+=2;why.push('High')}return {n,why}}
 const MSRC={gmail:'Gmail',outlook:'Outlook',zmail:'Zoho Mail',manual:'Added'};
 function mailRow(m){const sc=score(m);return `<div class="card mail ${sc.n>=2?'hot':''}"><div class="mh"><b>${esc(m.subj||'(no subject)')}</b><span class="src s-${m.src}">${MSRC[m.src]||m.src}</span></div><div class="muted">${esc(m.from||'')}${m.unread?' · <b>unread</b>':''}</div>${m.sum?`<p>${esc(m.sum)}</p>`:''}<div class="chips2">${sc.why.map(w=>`<span class="chip2">${w}</span>`).join('')}</div>${m.st=='Pending'?`<div class="toolbar" style="margin-top:8px"><button class="btn sm" onclick="dismiss('mail','${m.id}')">Mark handled</button></div>`:`<p>${pill(m.st=='Dismissed'?'Handled':m.st)}</p>`}</div>`}
 // ---- Friday planner ----
@@ -44,10 +44,10 @@ function staffView(){const open=D.staff.filter(x=>sst(x)!='Done'),done=D.staff.f
  ${manD.length?`<details class="card vivid" style="margin-bottom:12px"><summary><b>Done · ${manD.length}</b></summary>${manD.map(staffRow).join('')}</details>`:''}`}
 let remindOpen=null;
 window.staffAdd=()=>{const g=i=>document.getElementById(i).value.trim();if(!g('sf-staff')||!g('sf-sum')){toast('Add a staff member and task');return}D.staff.unshift({id:'L'+Date.now(),staff:g('sf-staff'),summary:g('sf-sum'),subj:g('sf-subj'),at:g('sf-at')||new Date().toISOString(),st:'Open'});save();render()};
-window.staffTog=id=>{const x=D.staff.find(x=>x.id==id),n=sst(x)=='Done'?'Open':'Done';D.staffMan[id]=n;if(!x.remote)x.st=n;save();window.remoteSave&&x.remote&&remoteSave('/staff-tasks/'+x.rid,{status:n.toLowerCase()},'PATCH');render()};
+window.staffTog=id=>{const x=D.staff.find(x=>x.id==id),n=sst(x)=='Done'?'Open':'Done';D.staffMan[id]=n;if(!x.remote)x.st=n;save();render()};
 window.staffRemind=id=>{remindOpen=id;render()};
 window.staffDraft=async id=>{const x=D.staff.find(x=>x.id==id),txt=document.getElementById('rm-'+id).value.trim();if(!txt)return;remindOpen=null;
- let ok=false;if(window.remoteDraft)ok=await remoteDraft({type:'reminder',to:x.staff_email||x.staff,subject:'Reminder: '+(x.subj||x.summary),body:txt,source_email_id:x.rid||null});
+ let ok=false;if(window.remoteDraft)ok=await remoteDraft({type:'reminder',to:x.staff_email||x.staff,subject:'Reminder: '+(x.subj||x.summary),body:txt,related_email_id:x.rid||null});
  if(!ok)D.approvals.unshift({id:Date.now(),bot:'Assistant',text:'Reminder to '+x.staff+': '+txt,st:'Pending'});save();toast('Reminder draft created. Approve it in Approvals; nothing was sent.');render()};
 // ---- views ----
 const _v0=view;
@@ -71,13 +71,13 @@ view=function(t){
   <label class="muted">Name<input class="in" id="pf-name" value="${esc(p.name)}"></label><label class="muted">Role<input class="in" id="pf-role" value="${esc(p.role)}"></label><label class="muted">Email<input class="in" id="pf-email" type="email" value="${esc(p.email)}"></label><label class="muted">Phone<input class="in" id="pf-phone" type="tel" value="${esc(p.phone)}"></label><label class="muted">Photo<input id="pf-photo" type="file" accept="image/*"></label></div>
   <button class="btn" onclick="saveProfile()">Save profile</button></div>`}
  if(t=='settings'){const s=D.settings,n=s.notify;return `<h2>Settings</h2><div class="two"><div class="card vivid"><h3>Notifications</h3>${[['brief','Morning brief'],['urgent','Urgent service alerts'],['approvals','New approvals'],['friday','Friday “Plan next week” prompt']].map(([k,l])=>`<label class="pl"><input type="checkbox" id="ns-${k}" ${n[k]?'checked':''}> ${l}</label>`).join('')}</div>
-  <div class="card vivid"><h3>Inbox rules</h3><label class="muted">VIP senders (one per line: name, email or domain)<textarea id="st-vip" rows="4">${esc(s.vip.join('\n'))}</textarea></label><label class="muted">Priority keywords (one per line)<textarea id="st-kw" rows="4">${esc(s.keywords.join('\n'))}</textarea></label></div></div>
+  <div class="card vivid"><h3>Inbox rules</h3><label class="muted">VIP senders (one per line: name, email or domain)<textarea id="st-vip" rows="4">${esc(s.vip.join('\n'))}</textarea></label><label class="muted">Priority keywords (one per line)<textarea id="st-kw" rows="4">${esc(s.keywords.join('\n'))}</textarea></label></div></div><div class="card vivid" style="margin-bottom:14px"><h3>Staff list</h3><p class="muted">Used to build Staff tasks from emails where you’re CC’d. One per line: <code>Name &lt;email&gt;</code>.</p><textarea id="st-staff" rows="5">${esc(s.staff.map(x=>(x.name?x.name+' <'+x.email+'>':x.email)).join('\n'))}</textarea><label class="muted">Staff email domains (one per line)<textarea id="st-dom" rows="2">${esc(s.staff_domains.join('\n'))}</textarea></label></div>
   <div class="card vivid"><h3>Connections</h3><p class="muted">Google, Microsoft, Zoho and WhatsApp are managed on the <a href="#/app/connections">Connections</a> page.</p></div><button class="btn big" onclick="saveSettings()">Save settings</button>`}
  return _v0(t)};
 window.saveProfile=()=>{const g=i=>document.getElementById(i).value.trim(),f=document.getElementById('pf-photo').files[0];const done=ph=>{D.profile={name:g('pf-name'),role:g('pf-role'),email:g('pf-email'),phone:g('pf-phone'),photo:ph};save();window.remoteSave&&remoteSave('/profile',D.profile);toast('Profile saved');render()};
  if(f){if(f.size>1.5e6){toast('Photo too large (max 1.5 MB)');return}const r=new FileReader();r.onload=()=>done(r.result);r.readAsDataURL(f)}else done(D.profile.photo)};
 window.saveSettings=()=>{const c=k=>document.getElementById('ns-'+k).checked,l=i=>document.getElementById(i).value.split('\n').map(x=>x.trim()).filter(Boolean);
- D.settings={notify:{brief:c('brief'),urgent:c('urgent'),approvals:c('approvals'),friday:c('friday')},vip:l('st-vip'),keywords:l('st-kw')};save();window.remoteSave&&remoteSave('/settings',D.settings);toast('Settings saved');render()};
+ D.settings={...D.settings,notify:{brief:c('brief'),urgent:c('urgent'),approvals:c('approvals'),friday:c('friday')},vip:l('st-vip'),keywords:l('st-kw'),staff:l('st-staff').map(x=>{const m=x.match(/^(.*?)\s*<([^>]+)>$/);return m?{name:m[1].trim(),email:m[2].trim()}:{name:'',email:x}}),staff_domains:l('st-dom')};save();window.remoteSave&&remoteSave('/settings',D.settings);toast('Settings saved');render()};
 // header shows profile name/role
 const _r0=render;render=function(){_r0();const s=document.querySelector('#brand span');if(s)s.innerHTML=`${first()}’s workspace<small>${esc(D.profile.role||'')}</small>`};
 removeEventListener('hashchange',_r0);addEventListener('hashchange',()=>render());
