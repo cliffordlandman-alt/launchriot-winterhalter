@@ -1,5 +1,8 @@
 // "Ask Riot" floating helper: page tips, quick actions, scripted FAQ, support via WhatsApp/email.
 (function(){
+// Support webhook (optional). Leave empty to use WhatsApp / email only.
+var SUPPORT_WEBHOOK_URL='';   // e.g. https://.../support
+var SUPPORT_WEBHOOK_KEY='';   // sent as X-Webhook-Key
 var WA='971586444285',MAIL='hello@launchriot.online';
 var TIPS={dashboard:'Your morning brief fills in as you add jobs, deals, meetings and stock. Tap "Set" to enter this month\'s sales target.',
 inbox:'Add an email with "+ Add" to track it. Once your LaunchRiot setup connects Gmail, Outlook or Zoho Mail, emails arrive here with AI summaries.',
@@ -46,12 +49,12 @@ var css=document.createElement('style');css.textContent=`
 @media(max-width:760px){#riot{right:12px;bottom:12px}#riot .rp{width:calc(100vw - 24px);bottom:46px}}`;
 document.head.appendChild(css);
 var el=document.createElement('div');el.id='riot';
-el.innerHTML='<div class="rp" role="dialog" aria-label="Ask Riot help"><div class="rh"><b>⚡ Ask Riot</b><button class="x" aria-label="Close help">×</button></div><div class="tip" id="rtip"></div><div class="qa"><button data-q="How do I add a customer?">How do I add a customer?</button><button data-q="What does Sync do?">What does Sync do?</button><button class="sup" data-s="1">Talk to LaunchRiot support</button></div><div class="sp" id="rsp"><a id="rwa" target="_blank" rel="noopener">WhatsApp</a><a class="m" id="rml">Email</a></div><div class="log" id="rlog"></div><form id="rf"><input id="rin" placeholder="Ask about the workspace…" autocomplete="off"><button aria-label="Ask">→</button></form></div><button class="rb" aria-expanded="false" aria-label="Open Ask Riot help"><i></i><span>Ask Riot</span></button>';
+el.innerHTML='<div class="rp" role="dialog" aria-label="Ask Riot help"><div class="rh"><b>⚡ Ask Riot</b><button class="x" aria-label="Close help">×</button></div><div class="tip" id="rtip"></div><div class="qa"><button data-q="How do I add a customer?">How do I add a customer?</button><button data-q="What does Sync do?">What does Sync do?</button><button class="sup" data-s="1">Talk to LaunchRiot support</button></div><div class="sp" id="rsp"><a id="rwa" target="_blank" rel="noopener">WhatsApp</a><a class="m" id="rml">Email</a><a id="rwh" href="#" style="display:none">Send here</a></div><div class="log" id="rlog"></div><form id="rf"><input id="rin" placeholder="Ask about the workspace…" autocomplete="off"><button aria-label="Ask">→</button></form></div><button class="rb" aria-expanded="false" aria-label="Open Ask Riot help"><i></i><span>Ask Riot</span></button>';
 document.body.appendChild(el);
 var page=function(){return (location.hash.split('/')[2]||'dashboard')};
 var $=function(i){return document.getElementById(i)};
 function tip(){$('rtip').textContent='💡 '+(TIPS[page()]||TIPS.dashboard)}
-function sup(){var txt='Winterhalter workspace help: '+(($('rin').value||'').trim()||'(page: '+page()+') ');$('rwa').href='https://wa.me/'+WA+'?text='+encodeURIComponent(txt);$('rml').href='mailto:'+MAIL+'?subject='+encodeURIComponent('Winterhalter workspace help')+'&body='+encodeURIComponent(txt);$('rsp').classList.add('on')}
+function sup(){var txt='Winterhalter workspace help: '+(($('rin').value||'').trim()||'(page: '+page()+') ');$('rwa').href='https://wa.me/'+WA+'?text='+encodeURIComponent(txt);$('rml').href='mailto:'+MAIL+'?subject='+encodeURIComponent('Winterhalter workspace help')+'&body='+encodeURIComponent(txt);$('rsp').classList.add('on');if(SUPPORT_WEBHOOK_URL){var w=$('rwh');w.style.display='';w.onclick=function(e){e.preventDefault();var m=($('rin').value||'').trim();if(!m){say('a','Type your question in the box below, then tap Send here.');return}fetch(SUPPORT_WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json','X-Webhook-Key':SUPPORT_WEBHOOK_KEY},body:JSON.stringify({message:'Winterhalter workspace help: '+m,page:page(),at:new Date().toISOString()})}).then(function(r){if(!r.ok)throw 0;$('rin').value='';say('a','Sent. The LaunchRiot team will get back to you.')}).catch(function(){say('a','Could not send. Please use WhatsApp or Email.')})}}}
 function say(c,t){var d=document.createElement('div');d.className=c;d.textContent=t;$('rlog').appendChild(d);d.scrollIntoView({block:'nearest'})}
 function ask(q){say('u',q);var a=null;var l=q.toLowerCase();if(/support|human|talk|help me|call/.test(l)){sup();a='Tap WhatsApp or Email below to reach the LaunchRiot team.'}else{for(var i=0;i<FAQ.length;i++)if(FAQ[i][0].test(l)){a=FAQ[i][1];break}}
 if(!a){a='I\'m not sure about that one yet. Tap "Talk to LaunchRiot support" and the team will help.';sup()}
