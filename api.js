@@ -28,20 +28,32 @@ window.logout=()=>{localStorage.removeItem(TOKEN_KEY);API.authed=false;API.conns
 // ---- data load ----
 function applyCons(){for(const k in KEY2PROV)D.con[k]=isCon(KEY2PROV[k])?1:0}
 function setRemote(key,items){D[key]=D[key].filter(x=>!x.remote).concat(items.map(x=>({...x,remote:1})))}
+const ccOf=m=>{const me=(D.profile&&D.profile.email||'').toLowerCase(),L=x=>(Array.isArray(x)?x:String(x||'').split(/[,;]/)).map(v=>String(typeof v=='object'?(v.email||v.address||''):v).toLowerCase().trim()).filter(Boolean);
+ if(m.gareth_role)return m.gareth_role=='cc';if(m.is_cc!=null)return !!m.is_cc;return !!me&&L(m.cc).some(v=>v.includes(me))&&!L(m.to).some(v=>v.includes(me))};
+const toName=m=>{const t=Array.isArray(m.to)?m.to[0]:String(m.to||'').split(/[,;]/)[0];return typeof t=='object'?(t.name||t.email||''):String(t||'').replace(/<.*>/,'').trim()};
+const toEmail=m=>{const t=Array.isArray(m.to)?m.to[0]:String(m.to||'').split(/[,;]/)[0];return typeof t=='object'?(t.email||''):((String(t).match(/<([^>]+)>/)||[])[1]||String(t).trim())};
 async function loadData(){const jobs=[];const g=(p,f)=>jobs.push(api(p).then(f).catch(e=>{if(e.message=='auth')throw e}));
- if(isCon('google')||isCon('microsoft')){
-  if(isCon('google'))g('/inbox?source=gmail',x=>D._gm=arr(x));if(isCon('microsoft'))g('/inbox?source=outlook',x=>D._ol=arr(x));
-  const f=new Date(),t=new Date(Date.now()+7*DAY);g('/calendar?from='+f.toISOString()+'&to='+t.toISOString(),x=>setRemote('cal',arr(x).map((e,i)=>{const s=pick(e,'start','start_time','starts_at');return{id:'rc'+pick(e,'id')||i,src:e.provider=='microsoft'||e.source=='outlook'?'outlook':'gcal',title:pick(e,'title','summary','subject')||'(no title)',d:String(s).slice(0,10),t:String(s).slice(11,16)}})))}
+ const box={},cal=[];
+ const srcs=[['google','gmail'],['microsoft','outlook'],['zoho','zoho']].filter(x=>isCon(x[0]));
+ srcs.forEach(([p,s])=>g('/inbox?source='+s,x=>box[s=='zoho'?'zmail':s]=arr(x)));
+ const f=new Date(),t=new Date(Date.now()+14*DAY);
+ srcs.forEach(([p,s])=>g('/calendar?source='+(s=='gmail'?'google':s=='outlook'?'microsoft':'zoho')+'&from='+f.toISOString()+'&to='+t.toISOString(),x=>arr(x).forEach((e,i)=>{const st=String(pick(e,'start','start_time','starts_at'));cal.push({id:'rc'+p+(pick(e,'id')||i),src:p=='google'?'gcal':p=='microsoft'?'outlook':'zcal',title:pick(e,'title','summary','subject')||'(no title)',d:st.slice(0,10),t:st.slice(11,16)})})));
  if(isCon('whatsapp'))g('/inbox?source=whatsapp',x=>setRemote('wa',arr(x).map((m,i)=>({id:'rw'+(pick(m,'id')||i),src:'wa',from:pick(m,'from','from_name','sender','contact'),msg:pick(m,'body','text','snippet','message'),reply:pick(m,'suggested_reply','draft'),st:'Pending'}))));
  if(isCon('zoho')){
   g('/crm/deals',x=>setRemote('deals',arr(x).map((d,i)=>({id:'rd'+(pick(d,'id')||i),co:pick(d,'account','account_name','company','contact_name'),title:pick(d,'name','deal_name','title'),val:+pick(d,'amount','value')||0,owner:pick(d,'owner','owner_name'),stage:STAGES.includes(d.stage)?d.stage:(pick(d,'stage')||'Lead')}))));
   g('/crm/contacts',x=>setRemote('cust',arr(x).map((c,i)=>({id:'rk'+(pick(c,'id')||i),name:pick(c,'name','full_name','account_name','company'),type:pick(c,'type','category')||'—',area:pick(c,'city','area','location')||'—',machines:pick(c,'machines')||'—',plan:pick(c,'plan')||'—'}))));
   g('/books/invoices',x=>setRemote('contracts',arr(x).map((v,i)=>{const due=String(pick(v,'due_date','due')).slice(0,10),st=String(pick(v,'status')).toLowerCase();return{id:'ri'+(pick(v,'id')||i),cust:pick(v,'customer_name','customer','contact'),plan:'Invoice '+pick(v,'number','invoice_number','id'),val:+pick(v,'total','amount','balance')||0,due:due||'—',st:st=='paid'?'Renewed':st=='overdue'?'Overdue':'Due soon'}})));}
- g('/drafts',x=>setRemote('approvals',arr(x).map((a,i)=>({id:'ra_'+(pick(a,'id')||i),rid:pick(a,'id'),bot:pick(a,'bot','agent','source')||'Assistant',text:pick(a,'summary','text','title','body'),st:({approved:'Approved',declined:'Declined'})[a.status]||'Pending'}))));
+ g('/drafts',x=>setRemote('approvals',arr(x).map((a,i)=>({id:'ra_'+(pick(a,'id')||i),rid:pick(a,'id'),bot:pick(a,'bot','agent','source','type')||'Assistant',text:pick(a,'summary','text','title','body'),st:({approved:'Approved',declined:'Declined'})[a.status]||'Pending'}))));
  g('/sync/status',x=>API.sync=x);
+ g('/profile',x=>{if(x&&typeof x=='object'&&(x.name||x.email))D.profile={...D.profile,...x}}); g('/settings',x=>{if(x&&typeof x=='object'&&x.vip)D.settings={...D.settings,...x}});
  await Promise.all(jobs);
- const mk=(L,src)=>(L||[]).map((m,i)=>({id:'rm'+src+(pick(m,'id')||i),src,from:pick(m,'from','from_name','sender'),subj:pick(m,'subject','title')||'(no subject)',sum:pick(m,'summary','ai_summary','snippet','body'),reply:pick(m,'suggested_reply','draft'),pri:m.priority=='high'||m.important?'High':'Normal',st:'Pending'}));
- if(D._gm||D._ol){setRemote('mail',mk(D._gm,'gmail').concat(mk(D._ol,'outlook')));delete D._gm;delete D._ol}}
+ if(srcs.length){const all=[];Object.entries(box).forEach(([src,L])=>L.forEach((m,i)=>all.push({m,src,i})));
+  setRemote('mail',all.map(({m,src,i})=>({id:'rm'+src+(pick(m,'id')||i),src,from:pick(m,'from','from_name','sender'),subj:pick(m,'subject','title')||'(no subject)',sum:pick(m,'summary','ai_summary','snippet'),reply:pick(m,'suggested_reply','draft'),pri:m.priority=='high'||m.important?'High':'Normal',unread:m.unread??(m.is_read===false),needs_reply:!!(m.needs_reply||m.reply_needed),at:pick(m,'received_at','date'),st:'Pending'})));
+  const prev=Object.fromEntries(D.staff.filter(x=>x.remote).map(x=>[x.id,x.st]));
+  setRemote('staff',all.filter(({m})=>ccOf(m)).map(({m,src,i})=>{const id='rs'+src+(pick(m,'id')||i);return{id,rid:pick(m,'id'),staff:toName(m)||'Unassigned',staff_email:toEmail(m),summary:pick(m,'task','action_item','summary','ai_summary')||pick(m,'subject'),subj:pick(m,'subject'),from:pick(m,'from','from_name'),at:pick(m,'received_at','date'),st:prev[id]||(m.task_status=='done'?'Done':'Open')}}));
+  D.cal=D.cal.filter(e=>!e.remote).concat(cal.map(e=>({...e,remote:1})))}}
+window.remoteSave=async(path,body,method)=>{if(!API.authed)return false;try{await api(path,{method:method||'PUT',body:JSON.stringify(body)});return true}catch(e){return false}};
+window.remoteDraft=async body=>{if(!API.authed)return false;try{await api('/drafts',{method:'POST',body:JSON.stringify(body)});await refresh();return true}catch(e){return false}};
 async function refresh(force){try{
   if(!tok()){const r=await fetch(API_BASE+'/connections').catch(()=>null);API.online=!!r;if(r)showLogin();render();return}
   API.conns=arr(await api('/connections'));API.online=true;API.authed=true;applyCons();await loadData();save()}
