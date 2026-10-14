@@ -32,6 +32,16 @@ const ccOf=m=>{const me=(D.profile&&D.profile.email||'').toLowerCase(),L=x=>(Arr
  if(m.gareth_role)return m.gareth_role=='cc';if(m.is_cc!=null)return !!m.is_cc;return !!me&&L(m.cc).some(v=>v.includes(me))&&!L(m.to).some(v=>v.includes(me))};
 const toName=m=>{const t=Array.isArray(m.to)?m.to[0]:String(m.to||'').split(/[,;]/)[0];return typeof t=='object'?(t.name||t.email||''):String(t||'').replace(/<.*>/,'').trim()};
 const toEmail=m=>{const t=Array.isArray(m.to)?m.to[0]:String(m.to||'').split(/[,;]/)[0];return typeof t=='object'?(t.email||''):((String(t).match(/<([^>]+)>/)||[])[1]||String(t).trim())};
+
+// Staff reply detection: backend replied=true, or a later message in the same thread (thread_id / In-Reply-To) sent by the assigned staff member.
+const fromEmail=m=>{const f=m.from_email||m.sender_email||(typeof m.from=='object'?m.from&&m.from.email:'')||((String(m.from||'').match(/<([^>]+)>/)||[])[1])||String(m.from||'');return String(f).toLowerCase().trim()};
+const thr=m=>pick(m,'thread_id','threadId','conversation_id');
+const mid=m=>pick(m,'message_id','messageId','internet_message_id');
+function replyOf(m,se,all){const t0=pick(m,'received_at','date'),T=thr(m),M=mid(m),me=String(se||'').toLowerCase();
+ if(m.replied===true||(m.thread&&m.thread.replied===true))return{at:pick(m,'replied_at')||(m.thread&&m.thread.replied_at)||''};
+ if(!me)return null;
+ const r=all.find(x=>x!==m&&fromEmail(x)==me&&((T&&thr(x)==T)||(M&&pick(x,'in_reply_to','inReplyTo')==M))&&(!t0||!pick(x,'received_at','date')||new Date(pick(x,'received_at','date'))>new Date(t0)));
+ return r?{at:pick(r,'received_at','date')}:null}
 async function loadData(){const jobs=[];const g=(p,f)=>jobs.push(api(p).then(f).catch(e=>{if(e.message=='auth')throw e}));
  const box={},cal=[];
  const srcs=[['google','gmail'],['microsoft','outlook'],['zoho','zoho']].filter(x=>isCon(x[0]));
@@ -49,8 +59,8 @@ async function loadData(){const jobs=[];const g=(p,f)=>jobs.push(api(p).then(f).
  await Promise.all(jobs);
  if(srcs.length){const all=[];Object.entries(box).forEach(([src,L])=>L.forEach((m,i)=>all.push({m,src,i})));
   setRemote('mail',all.map(({m,src,i})=>({id:'rm'+src+(pick(m,'id')||i),src,from:pick(m,'from','from_name','sender'),subj:pick(m,'subject','title')||'(no subject)',sum:pick(m,'summary','ai_summary','snippet'),reply:pick(m,'suggested_reply','draft'),pri:m.priority=='high'||m.important?'High':'Normal',unread:m.unread??(m.is_read===false),needs_reply:!!(m.needs_reply||m.reply_needed),at:pick(m,'received_at','date'),st:'Pending'})));
-  const prev=Object.fromEntries(D.staff.filter(x=>x.remote).map(x=>[x.id,x.st]));
-  setRemote('staff',all.filter(({m})=>ccOf(m)).map(({m,src,i})=>{const id='rs'+src+(pick(m,'id')||i);return{id,rid:pick(m,'id'),staff:toName(m)||'Unassigned',staff_email:toEmail(m),summary:pick(m,'task','action_item','summary','ai_summary')||pick(m,'subject'),subj:pick(m,'subject'),from:pick(m,'from','from_name'),at:pick(m,'received_at','date'),st:prev[id]||(m.task_status=='done'?'Done':'Open')}}));
+  setRemote('staff',all.filter(({m})=>ccOf(m)&&!pick(m,'in_reply_to','inReplyTo')).map(({m,src,i})=>{const id='rs'+src+(pick(m,'id')||i),se=toEmail(m),rp=replyOf(m,se,all.map(x=>x.m));
+   return{id,rid:pick(m,'id'),staff:toName(m)||'Unassigned',staff_email:se,summary:pick(m,'task','action_item','summary','ai_summary')||pick(m,'subject'),subj:pick(m,'subject'),from:pick(m,'from','from_name'),at:pick(m,'received_at','date'),auto:rp?1:0,replied_at:rp?rp.at:'',st:m.task_status=='done'?'Done':'Open'}}));
   D.cal=D.cal.filter(e=>!e.remote).concat(cal.map(e=>({...e,remote:1})))}}
 window.remoteSave=async(path,body,method)=>{if(!API.authed)return false;try{await api(path,{method:method||'PUT',body:JSON.stringify(body)});return true}catch(e){return false}};
 window.remoteDraft=async body=>{if(!API.authed)return false;try{await api('/drafts',{method:'POST',body:JSON.stringify(body)});await refresh();return true}catch(e){return false}};
