@@ -27,8 +27,8 @@ function showLogin(note){let d=document.getElementById('wh-login');if(d){if(note
  d.querySelector('#wh-skip').onclick=e=>{e.preventDefault();d.remove()};
  d.querySelector('form').onsubmit=async e=>{e.preventDefault();const f=e.target,er=d.querySelector('#wh-lerr');er.textContent='Signing in…';
   try{await api('/auth/login',{method:'POST',body:JSON.stringify({email:f.email.value.trim(),password:f.password.value})});
-   const me=await api('/auth/me');API.user=me;API.authed=true;d.remove();refresh()}
-  catch(x){er.textContent=x.status==401||x.status==400?'Wrong email or password.':x.status==404||x.status==405||x.status==501?'Sign-in isn’t live yet. You can continue offline for now.':x.status?'Sign-in failed ('+x.status+').':'Sign-in isn’t available from this browser yet. You can continue offline for now.'}}}
+   const me=await api('/auth/me');API.user=(me&&me.user)||me;API.authed=true;d.remove();refresh()}
+  catch(x){er.textContent=x.status==429?'Too many attempts. Please wait 15 minutes and try again.':x.status==401||x.status==400?'Wrong email or password.':x.status==404||x.status==405||x.status==501?'Sign-in isn’t live yet. You can continue offline for now.':x.status?'Sign-in failed ('+x.status+').':'Sign-in isn’t available from this browser yet. You can continue offline for now.'}}}
 window.logout=async()=>{try{await api('/auth/logout',{method:'POST'})}catch(e){}API.authed=false;API.user=null;API.status=[];D.mail=D.mail.filter(x=>!x.remote);['cal','wa','approvals','staff'].forEach(k=>D[k]=D[k].filter(x=>!x.remote));applyCons();save();render();showLogin()};
 // ---- data ----
 function applyCons(){for(const k in KEY2PROV)D.con[k]=isCon(KEY2PROV[k])?1:0}
@@ -57,7 +57,7 @@ async function loadData(){const soft=p=>api(p).catch(e=>{if(e.status==401)throw 
  else if(provs.length){setRemote('staff',all.filter(m=>m.is_cc).map(m=>{const x=taskMap(m,false),rp=replyOf(m,x.staff_email,all);if(rp){x.auto=1;x.replied_at=rp.at}return x}))}}
 window.remoteSave=async(path,body,method)=>{if(!API.authed)return false;try{await api(path,{method:method||'PUT',body:JSON.stringify(body)});return true}catch(e){toast('Saved here; server save failed ('+(e.status||'offline')+')');return false}};
 window.remoteDraft=async body=>{if(!API.authed)return false;try{await api('/drafts',{method:'POST',body:JSON.stringify(body)});await refresh();return true}catch(e){return false}};
-async function boot(){try{API.user=await api('/auth/me');API.authed=true;API.online=true}
+async function boot(){try{const me=await api('/auth/me');API.user=(me&&me.user)||me;API.authed=true;API.online=true}
  catch(e){if(e.status){API.online=true;if(!e.status||e.status==401)showLogin()}else{const h=await fetch(API_BASE+'/health').then(r=>r.ok).catch(()=>false);API.online=h;if(h)showLogin()}}
  render();if(API.authed)refresh()}
 async function refresh(){if(!API.authed)return;try{API.status=arr(await api('/status'));API.online=true;applyCons();await loadData();save()}catch(e){if(e.status!=401){API.err=e.message}}render()}
