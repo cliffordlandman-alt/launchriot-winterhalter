@@ -13,7 +13,7 @@ async function api(path,opt={}){const h={...(opt.body?{'Content-Type':'applicati
  const ct=r.headers.get('content-type')||'',b=ct.includes('json')?await r.json().catch(()=>null):await r.text();
  if(r.status==401){if(API.authed){API.authed=false;render();showLogin()}throw new ApiErr(401,b)}
  if(!r.ok)throw new ApiErr(r.status,b);return b}
-const arr=x=>Array.isArray(x)?x:(x&&(x.items||x.data||x.results||x.providers||x.drafts||x.tasks))||[];
+const arr=x=>Array.isArray(x)?x:(x&&(x.items||x.data||x.results||x.providers||x.connections||x.drafts||x.tasks))||[];
 const pick=(o,...k)=>{for(const x of k)if(o&&o[x]!=null&&o[x]!=='')return o[x];return ''};
 const st=p=>API.status.find(c=>c.provider==p)||{};
 const isCon=p=>(st(p).state||st(p).status)=='connected';
@@ -67,7 +67,7 @@ view=function(t){
  if(t=='connections'&&API.authed){const card=p=>{const c=st(p),s=c.state||c.status||'not_configured';
    const lab={connected:'Connected',not_connected:'Not connected yet',not_configured:'Not set up yet',error:'Error'}[s]||s;
    return `<div class="card vivid"><b>${PROV[p].n}</b><p>${pill(lab)}</p>${c.email?`<div class="muted">${esc(c.email)}</div>`:''}<div class="muted">Last synced: ${ago(c.last_sync)}</div>${c.last_error?`<div class="muted" style="color:#b00">${esc(c.last_error)}</div>`:''}<div class="toolbar" style="margin-top:8px">${s=='connected'?`<button class="btn sm" onclick="sync('${PROV[p].k[0]}')">🔄 Sync now</button>`:s=='not_configured'?`<span class="muted">Your LaunchRiot setup will enable this.</span>`:`<button class="btn sm" onclick="apiConnect('${p}')">Connect</button>`}</div></div>`};
-  return `<h2>Connections</h2><p class="muted">${syncLine()} · Outbound delivery is off: nothing is ever sent from this workspace.</p><div class="grid">${Object.keys(PROV).map(card).join('')}<div class="card vivid"><b>WhatsApp Business</b><p>${pill('Not set up yet')}</p><span class="muted">Your LaunchRiot setup will enable this.</span></div></div><p>${API.user&&API.user.email?esc(API.user.email)+' · ':''}<a href="#" onclick="logout();return false" class="muted">Sign out</a></p>`}
+  return `<h2>Connections</h2><p class="muted">${syncLine()} · Outbound delivery is off: nothing is ever sent from this workspace.</p><div class="grid">${Object.keys(PROV).map(card).join('')}<div class="card vivid" style="grid-column:1/-1"><b>WhatsApp</b><p class="muted">Opens WhatsApp Web in a new tab. Messages are not imported into LaunchRiot yet.</p><div class="toolbar" style="margin-top:8px"><a class="btn sm" href="https://web.whatsapp.com" target="_blank" rel="noopener noreferrer">Open WhatsApp Web (Personal)</a><a class="btn sm" href="https://web.whatsapp.com" target="_blank" rel="noopener noreferrer">Open WhatsApp Web (Business)</a></div></div></div><p>${API.user&&API.user.email?esc(API.user.email)+' · ':''}<a href="#" onclick="logout();return false" class="muted">Sign out</a></p>`}
  return _view(t)};
 function syncLine(){const t=API.status.map(c=>c.last_sync).filter(Boolean).sort().pop();return API.authed?'Last synced '+ago(t):''}
 window.apiConnect=p=>{location.href=API_BASE+'/oauth/'+p+'/start'};
