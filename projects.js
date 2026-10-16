@@ -1,0 +1,63 @@
+// Workspace feature 4/5: Projects, Activity feed, Home dashboard (API: gareth-api-p1.md).
+(function(){'use strict';const W=window.WN,{S,api,esc,toast}=W;
+const E=encodeURIComponent;
+const J=(m,b)=>({method:m,body:b?JSON.stringify(b):undefined});
+const ref=()=>(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());
+const D={p:[],home:null,feed:[],ff:'all',lim:50,loaded:false,fl:false,busy:false};S.pj=D;const arr=W.arr;
+const day=iso=>iso?W.dkey(iso):'';
+async function refresh(){if(!S.authed||D.busy)return;D.busy=true;
+ const [p,h,f]=await Promise.all([api('/projects?status=open_all').catch(()=>null),api('/home').catch(()=>null),api('/feed?filter='+D.ff+'&limit='+D.lim).catch(()=>null)]);
+ D.busy=false;if(p)D.p=arr(p);if(h)D.home=h;if(f){D.feed=arr(f);D.fl=true}D.loaded=true;if(!document.querySelector('.modal'))W.render()}
+W.onLoad(async()=>{if(!D.loaded)refresh()});
+async function act(fn,msg){try{await fn();if(msg)toast(msg);D.busy=false;await refresh();return true}catch(e){toast(e.status==409?'A project with that name already exists.':'Could not save ('+(e.status||'offline')+'). Nothing was changed.');return false}}
+const head=(t,s)=>`<h1>${t}</h1><p class="sub">${s}</p>${!S.authed?'<div class="notice">Sign in to use your workspace. <button class="btn sm" data-act="login">Sign in</button></div>':!S.online?'<div class="notice">'+esc(S.err)+'</div>':''}`;
+const ST={planning:'Planning',active:'Active',on_hold:'On hold',completed:'Completed',cancelled:'Cancelled'};
+// ---- Home ----
+const LINK={task:'tasks',followup:'followups',decision:'overview',project:'projects',milestone:'projects',event:'calendar'};
+function sect(t,items,row){return items&&items.length?`<div class="card"><h2>${t}</h2>${items.map(row).join('')}</div>`:''}
+function vHome(){const h=D.home;
+ let b=head(W.greet?W.greet()+', '+(window.WN_NAME||'Gareth')+'.':'Home','Everything that needs you today, in one place.');
+ if(!S.authed)return b;if(!h)return b+'<div class="card empty">Loading your day…</div>';
+ const c=h.counts||{};
+ if(h.empty)b+='<div class="card calm"><h2>Nothing needs you today.</h2><p class="mut">No meetings, due items or open decisions right now. Add a task or a follow-up and it will show here.</p></div>';
+ else{
+  b+=`<div class="tiles"><a class="tile" href="#/calendar"><b>${arr(h.meetings_today).length}</b><span>Meetings today</span></a><a class="tile" href="#/tasks"><b>${arr(h.tasks_due_today).length+arr(h.overdue_tasks).length}</b><span>Tasks due or overdue</span></a><a class="tile" href="#/followups"><b>${arr(h.followups_due_today).length+arr(h.overdue_followups).length}</b><span>Follow-ups due</span></a></div>`;
+  b+=sect('Needs your attention',h.needs_attention,x=>`<a class="item srhit" href="#/${LINK[x.type]||'overview'}"><div class="t">${esc(x.title)}</div><div class="mut sm">${esc(String(x.type||'').replace('_',' '))}</div></a>`);
+  b+=sect('Meetings today',h.meetings_today,m=>`<div class="item"><div class="t">${esc(W.tm(m.starts_at||m.at))} · ${esc(m.title||'(no title)')}</div></div>`);
+  b+=sect('Overdue tasks',h.overdue_tasks,t=>`<div class="item"><div class="t">${esc(t.title)}</div><div class="late sm">Due ${esc(day(t.deadline))}</div></div>`);
+  b+=sect('Overdue follow-ups',h.overdue_followups,t=>`<div class="item"><div class="t">${esc(t.subject)}</div><div class="late sm">${esc(t.person||'')} · due ${esc(day(t.follow_up_date))}</div></div>`);
+  b+=sect('Decisions waiting',h.pending_decisions,t=>`<div class="item"><div class="t">${esc(t.title)}</div></div>`);
+  b+=sect('Active projects',h.active_projects,p=>`<a class="item srhit" href="#/projects"><div class="t">${esc(p.name)}</div><div class="mut sm">${p.open_tasks||0} open tasks${p.overdue_tasks?' · <span class="late">'+p.overdue_tasks+' overdue</span>':''}${p.next_milestone?' · next: '+esc(p.next_milestone.title):''}</div></a>`)}
+ return b}
+// ---- Feed ----
+const FT=[['all','All'],['important','Important'],['waiting_on_me','Waiting on me'],['completed','Completed']];
+function vFeed(){return head('Activity','What actually happened in your workspace. Nothing is made up.')+`<div class="row seg">${FT.map(([k,l])=>`<button class="btn sm ${D.ff==k?'':'alt'}" data-pj-ff="${k}">${l}</button>`).join('')}</div><div class="card" id="pj-feed">${D.feed.length?D.feed.map(i=>`<div class="item"><div class="t">${esc(i.title||i.text||'')}</div><div class="mut sm">${esc(String(i.kind||'').replace('_',' '))} · ${esc(W.dl(i.at))} ${esc(W.tm(i.at))}${i.action_needed?' · <b class="late">needs you</b>':''}</div>${i.text&&i.text!==i.title?`<div class="why">${esc(String(i.text).slice(0,160))}</div>`:''}</div>`).join(''):`<div class="empty">${S.authed?(D.fl?'No activity here yet. It appears as you use your workspace.':'Loading…'):'Sign in to see activity.'}</div>`}${D.feed.length>=D.lim?'<div class="row" style="justify-content:center;margin-top:12px"><button class="btn alt" data-pj-more>Show more</button></div>':''}</div>`}
+// ---- Projects ----
+function pRow(p){return `<article class="card crow"><div class="tx"><h3>${esc(p.name)} <span class="pill">${esc(ST[p.status]||p.status)}</span></h3>${p.summary?`<div class="mut sm">${esc(String(p.summary).slice(0,140))}</div>`:''}<div class="sm">${p.open_tasks||0} open tasks${p.overdue_tasks?' · <span class="late">'+p.overdue_tasks+' overdue</span>':''}${p.open_decisions?' · '+p.open_decisions+' decisions':''}${p.next_milestone?' · next: '+esc(p.next_milestone.title)+' ('+esc(day(p.next_milestone.due))+')':''}</div></div><div class="row"><button class="btn alt sm" data-pj-open="${esc(p.id)}">Open</button><button class="btn alt sm" data-pj-edit="${esc(p.id)}">Edit</button><button class="btn alt sm" data-pj-del="${esc(p.id)}" aria-label="Delete project">Delete</button></div></article>`}
+function vProjects(){return head('Projects','Each project with its tasks, milestones, decisions and documents.')+`<form class="card addbar" id="pj-form" style="grid-template-columns:1fr 160px auto"><input name="name" required maxlength="200" placeholder="New project name" aria-label="Project name"><input name="date" type="date" aria-label="Target date"><button class="btn">Add</button></form><div>${D.p.length?D.p.map(pRow).join(''):`<div class="card empty">${S.authed?'No projects yet. Add the first one.':'Sign in to see projects.'}</div>`}</div>`}
+function pForm(p){return `<form id="pj-edit" data-id="${esc(p.id)}"><h2>Edit project</h2><label>Name<input name="name" required maxlength="200" value="${esc(p.name)}"></label><label>Status<select name="status">${Object.keys(ST).map(k=>`<option value="${k}" ${p.status==k?'selected':''}>${ST[k]}</option>`).join('')}</select></label><label>Summary<textarea name="summary" rows="3" maxlength="2000">${esc(p.summary)}</textarea></label><label>Next action<input name="next_action" maxlength="300" value="${esc(p.next_action)}"></label><label>Target date<input name="date" type="date" value="${esc(day(p.target_date))}"></label><div class="row"><button class="btn">Save</button><button type="button" class="btn alt" data-ws-x>Cancel</button></div></form>`}
+const lst=(t,a,r)=>`<h3 style="margin-top:14px">${t}</h3>${a&&a.length?a.map(r).join(''):'<div class="empty">None.</div>'}`;
+function pDet(p){return `<div class="cdet"><h2>${esc(p.name)} <span class="pill">${esc(ST[p.status]||p.status)}</span></h2>${p.summary?`<div class="why">${esc(p.summary)}</div>`:''}${p.next_action?`<div class="sm"><b>Next:</b> ${esc(p.next_action)}</div>`:''}
+ <h3 style="margin-top:14px">Milestones</h3><form id="pj-mform" data-id="${esc(p.id)}" class="addbar2" style="grid-template-columns:1fr 150px auto"><input name="title" required maxlength="200" placeholder="Add a milestone" aria-label="Milestone"><input name="due" type="date" aria-label="Due"><button class="btn">Add</button></form>
+ ${arr(p.milestones).map(m=>`<div class="item trow"><input type="checkbox" data-pj-mdone="${esc(m.id)}" data-pid="${esc(p.id)}" ${m.status=='done'?'checked':''} aria-label="Done"><div class="tx"><div class="t ${m.status=='done'?'done':''}">${esc(m.title)}</div><div class="sm ${m.overdue?'late':'mut'}">${m.due?(m.overdue?'Overdue · ':'')+'Due '+esc(day(m.due)):'No date'}</div></div><button class="btn alt sm" data-pj-mdel="${esc(m.id)}" data-pid="${esc(p.id)}" aria-label="Delete milestone">Delete</button></div>`).join('')}
+ ${lst('Tasks',p.tasks,t=>`<div class="item"><div class="t">${esc(t.title)}</div></div>`)}${lst('Decisions',p.decisions,t=>`<div class="item"><div class="t">${esc(t.title)}</div><div class="mut sm">${esc(t.status||'')}</div></div>`)}${lst('Documents',p.documents,t=>`<div class="item"><div class="t">${esc(t.filename)}</div></div>`)}
+ ${lst('Events',p.upcoming_events,t=>`<div class="item"><div class="t">${esc(t.title)}</div><div class="mut sm">${esc(W.dl(t.starts_at))} ${esc(W.tm(t.starts_at))}</div></div>`)}${lst('People',p.contacts,t=>`<div class="item"><div class="t">${esc(t.name)}</div></div>`)}${lst('Follow-ups',p.open_followups,t=>`<div class="item"><div class="t">${esc(t.subject)}</div></div>`)}${lst('Notes',p.notes,t=>`<div class="item"><div class="t">${esc(t.title||'Untitled')}</div></div>`)}
+ <form id="pj-dform" data-id="${esc(p.id)}" class="addbar2" style="grid-template-columns:1fr auto;margin-top:10px"><input name="title" required maxlength="300" placeholder="Add a decision to this project" aria-label="Decision"><button class="btn">Add</button></form>
+ <div class="row" style="margin-top:12px"><button class="btn alt" data-ws-x>Close</button></div></div>`}
+async function openP(id){try{const p=await api('/projects/'+E(id));document.querySelectorAll('.modal').forEach(m=>m.remove());W.modal(pDet(p.project||p),'Project')}catch(e){toast('Could not open project')}}
+W.view('home','Home',vHome,'overview');W.view('projects','Projects',vProjects,'overview');W.view('activity','Activity',vFeed);
+const FK={p:ref(),m:ref()};const dIso=v=>v?new Date(v+'T09:00:00+04:00').toISOString():null;
+document.addEventListener('click',async ev=>{const b=ev.target.closest('[data-pj-ff],[data-pj-more],[data-pj-open],[data-pj-edit],[data-pj-del],[data-pj-mdel]');if(!b)return;const d=b.dataset;
+ if('pjMore' in d){D.lim+=50;D.busy=false;await refresh();W.render()}
+ if(d.pjFf){D.ff=d.pjFf;D.lim=50;D.fl=false;D.feed=[];W.render();try{D.feed=arr(await api('/feed?filter='+D.ff+'&limit='+D.lim))}catch(e){toast('Could not load activity')}D.fl=true;W.render()}
+ if(d.pjOpen)openP(d.pjOpen);
+ if(d.pjEdit){const p=D.p.find(x=>String(x.id)==d.pjEdit);p&&W.modal(pForm(p),'Edit project')}
+ if(d.pjDel&&confirm('Delete this project and its milestones? Linked tasks and notes are kept.'))act(()=>api('/projects/'+E(d.pjDel),J('DELETE')),'Project deleted');
+ if(d.pjMdel&&confirm('Delete this milestone?')){try{await api('/projects/'+E(d.pid)+'/milestones/'+E(d.pjMdel),J('DELETE'))}catch(e){toast('Could not delete')}D.busy=false;refresh();openP(d.pid)}});
+document.addEventListener('change',async ev=>{const c=ev.target.closest('[data-pj-mdone]');if(!c)return;try{await api('/projects/'+E(c.dataset.pid)+'/milestones/'+E(c.dataset.pjMdone),J('PUT',{status:c.checked?'done':'open'}))}catch(e){toast('Could not save')}D.busy=false;refresh();openP(c.dataset.pid)});
+document.addEventListener('submit',async ev=>{const f=ev.target;
+ if(f.id=='pj-dform'){ev.preventDefault();const id=f.dataset.id,t=f.title.value.trim();if(!t)return;try{await api('/projects/'+E(id)+'/decisions',J('POST',{title:t,client_ref:ref()}));toast('Decision added')}catch(e){return toast('Could not save ('+(e.status||'offline')+')')}D.busy=false;refresh();openP(id)}
+ if(f.id=='pj-form'){ev.preventDefault();const b={name:f.name.value.trim(),client_ref:FK.p};if(f.date.value)b.target_date=dIso(f.date.value);if(!b.name)return;if(await act(()=>api('/projects',J('POST',b)),'Project added')){f.reset();FK.p=ref()}}
+ if(f.id=='pj-edit'){ev.preventDefault();const id=f.dataset.id,b={name:f.name.value.trim(),status:f.status.value,summary:f.summary.value.trim(),next_action:f.next_action.value.trim(),target_date:dIso(f.date.value)};if(await act(()=>api('/projects/'+E(id),J('PUT',b)),'Saved')){const m=f.closest('.modal');m&&m.remove();W.render()}}
+ if(f.id=='pj-mform'){ev.preventDefault();const id=f.dataset.id,b={title:f.title.value.trim(),client_ref:FK.m};if(f.due.value)b.due=dIso(f.due.value);if(!b.title)return;try{await api('/projects/'+E(id)+'/milestones',J('POST',b));FK.m=ref();toast('Milestone added')}catch(e){return toast('Could not save ('+(e.status||'offline')+')')}D.busy=false;refresh();openP(id)}});
+})();

@@ -16,7 +16,7 @@ function form(v){v=v||{};const byDom=!v.email&&v.domain;return `<form id="vipfor
 <p class="mut sm">Mail from this address is flagged VIP and ranked higher. This is a list you maintain by hand.</p>
 <div class="row"><button class="btn">Save</button><button type="button" class="btn alt" data-vip-x>Cancel</button></div></form>`}
 function thread(t){const a=t.from_name||(t.from&&typeof t.from=='object'?t.from.name||t.from.email:t.from)||'';const at=t.received_at||t.at;const l=(t.source||'gmail')=='gmail'&&t.thread_id?'https://mail.google.com/mail/u/0/#all/'+encodeURIComponent(t.thread_id):'';
- return `<div class="item"><div class="t">${esc(t.subject||'(no subject)')}</div><div class="mut sm">${esc(a)}${at?' · '+esc(W.dl(at))+' '+esc(W.tm(at)):''}</div>${l?`<a href="${esc(l)}" target="_blank" rel="noopener noreferrer">Open in Gmail ↗</a>`:''}</div>`}
+ return `<div class="item"><div class="t">${esc(t.subject||'(no subject)')}</div><div class="mut sm">${esc(a)}${at?' · '+esc(W.dl(at))+' '+esc(W.tm(at)):''}</div>${l?`<a href="${esc(l)}" target="_blank" rel="noopener noreferrer">Open original message ↗</a>`:''}</div>`}
 function detail(){const v=S.vips.find(x=>x.id==S.vipSel);if(!v)return '';const h=S.vipHist&&S.vipHist.vip&&S.vipHist.vip.id==v.id?S.vipHist:null;
  if(!h)return `<div class="card"><h2>${esc(v.name)}</h2><div class="empty">Loading history…</div></div>`;
  const oc=h.open_commitments||{},dec=oc.decisions||[],tk=oc.captured_tasks||[],notes=h.notes||[],th=h.threads||[];
