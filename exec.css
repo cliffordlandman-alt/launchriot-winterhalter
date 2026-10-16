@@ -57,3 +57,4 @@ label{display:block;font-size:13px;color:var(--mut);margin-bottom:10px}
 .is-demo .brand img{background:none;padding:0;height:30px}
 #landing{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px;background:#101116}.lbox{max-width:440px;width:100%;background:#16171d;border:1px solid #2a2c35;border-radius:18px;padding:28px;text-align:center;color:#f0efea;display:grid;gap:14px}.lbox .llogo{height:40px;width:auto;margin:0 auto}.lbox h1{margin:0;font-size:24px;color:#fff}.lbox p{margin:0;color:#c9d2e3}.lbox .btn{width:100%}
 #ltry{background:#83e7bb;color:#101713;border-color:#83e7bb;font-weight:700}
+.foot a{color:#9fd8f5}
