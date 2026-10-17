@@ -52,3 +52,4 @@ a{color:var(--a)}
 /* logo sits on a white tile so the dark wordmark stays readable; file unchanged */
 .brand{flex:none}.brand img{background:#fff;padding:3px 8px;border-radius:8px;height:34px;width:auto;max-width:none;flex:none;object-fit:contain}
 @media(max-width:720px){.brand img{height:30px}.top{flex-wrap:nowrap}.who{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}}
+.fab{display:none!important}
