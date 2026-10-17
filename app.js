@@ -6,6 +6,7 @@ const $=s=>document.querySelector(s);
 const HOOKS=[];const S={authed:false,online:true,loaded:false,err:'',conn:[],mail:[],cal:[],staff:[],drafts:[],user:null,syncedAt:null,ans:null};
 const arr=x=>Array.isArray(x)?x:(x&&(x.items||x.data||x.connections))||[];
 const TK='wn-tok',getTok=()=>{try{return localStorage.getItem(TK)||''}catch(e){return ''}},setTok=t=>{try{t?localStorage.setItem(TK,t):localStorage.removeItem(TK)}catch(e){}};
+(function(){try{const m=/[#&?\/](?:t|s)=([A-Za-z0-9_-]{20,100})/.exec(location.hash||'');if(m){setTok(m[1]);history.replaceState(null,'',location.pathname+location.search)}}catch(e){}})();
 async function api(p,o){o=o||{};const h=o.body?{'Content-Type':'application/json'}:{};const tk=getTok();if(tk)h.Authorization='Bearer '+tk;const r=await fetch(API_BASE+p,{...o,credentials:'include',headers:h});
  const ct=r.headers.get('content-type')||'',b=ct.includes('json')?await r.json().catch(()=>null):null;const e=new Error('HTTP '+r.status);e.status=r.status;
  if(!r.ok){if(r.status==401&&p!='/auth/login')setTok('');throw e}if(p=='/auth/login'&&b){const t=b.token||b.session_token||b.session_id||b.sid||b.session||(b.data&&b.data.token);if(typeof t=='string'&&t)setTok(t)}return b}
