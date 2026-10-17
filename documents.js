@@ -1,6 +1,6 @@
-// Workspace feature 3: Documents and global Search (API: gareth-api-p1.md part 3).
+// Workspace feature 3: Documents and global Search (API: API part 3).
 (function(){'use strict';const W=window.WN,{S,api,esc,toast}=W;
-const E=encodeURIComponent,B='https://api-gareth.145-241-118-107.sslip.io';
+const E=encodeURIComponent,B=(window.WN_CFG||{}).apiBase||'';
 const ref=()=>(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());
 const tok=()=>{try{return localStorage.getItem('wn-tok')||''}catch(e){return ''}};
 const D={docs:[],loaded:false,busy:false,q:'',sq:'',res:null,sbusy:false};S.docs=D;
@@ -17,6 +17,7 @@ function vDocs(){return head('Documents','Upload files once, find them again by 
 const TY={task:['Tasks','tasks'],event:['Events','calendar'],note:['Notes','notes'],contact:['Contacts','contacts'],followup:['Follow-ups','followups'],document:['Documents','documents']};
 function vSearch(){const r=D.res;let h=head('Search','One box for tasks, events, notes, contacts, follow-ups and documents.')+`<form class="card row" id="sr-form"><input id="sr-q" type="search" required minlength="2" placeholder="Search everything" aria-label="Search everything" value="${esc(D.sq)}" style="flex:1;min-width:160px"><button class="btn">Search</button></form>`;
  if(D.sbusy)h+='<div class="card empty">Searching…</div>';
+ else if(!r&&(window.WN_CFG||{}).demo)h+='<div class="card"><h2>Try a search</h2><div class="row">'+['boiler','tenant','quote','inspection','compressor'].map(w=>`<button class="btn alt sm" data-sr-chip="${w}">${w}</button>`).join('')+'</div></div>';
  else if(r){const items=arr(r);h+=items.length?Object.keys(TY).filter(t=>items.some(i=>i.type==t)).map(t=>`<div class="card"><h2>${TY[t][0]}</h2>${items.filter(i=>i.type==t).map(i=>`<button class="item srhit" data-sr-open="${esc(t)}" data-sr-id="${esc(i.id)}"><div class="t">${esc(i.title||'(untitled)')}</div>${i.snippet?`<div class="mut sm">${esc(String(i.snippet).slice(0,160))}</div>`:''}</button>`).join('')}</div>`).join(''):`<div class="card empty">Nothing found for “${esc(r.query||D.sq)}”.</div>`}
  return h}
 W.view('documents','Documents',vDocs,'overview');W.view('search','Search',vSearch,'overview');
@@ -32,6 +33,7 @@ document.addEventListener('click',async ev=>{const b=ev.target.closest('[data-dc
   try{await api('/documents/'+E(x.id),{method:'PUT',body:JSON.stringify({filename:n.trim().replace(/[\\/]/g,'')+ext})});toast('Renamed')}catch(e){toast('Could not rename ('+(e.status||'offline')+')')}D.busy=false;refresh()}
  if(d.dcDel&&confirm('Delete this document? The file is removed.')){try{await api('/documents/'+E(d.dcDel),{method:'DELETE'});toast('Document deleted')}catch(e){toast('Could not delete')}D.busy=false;refresh()}});
 let t;document.addEventListener('input',ev=>{if(ev.target.id=='dc-q'){D.q=ev.target.value;clearTimeout(t);t=setTimeout(async()=>{D.busy=false;await refresh();const i=document.getElementById('dc-q');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},300)}});
+document.addEventListener('click',ev=>{const c=ev.target.closest('[data-sr-chip]');if(!c)return;D.sq=c.dataset.srChip;const i=document.getElementById('sr-q');i.value=D.sq;document.getElementById('sr-form').requestSubmit()});
 document.addEventListener('submit',async ev=>{if(ev.target.id!='sr-form')return;ev.preventDefault();const q=document.getElementById('sr-q').value.trim();if(q.length<2)return;D.sq=q;D.sbusy=true;W.render();
  try{D.res=await api('/search?q='+E(q)+'&limit=10')}catch(e){D.res=null;toast('Search failed ('+(e.status||'offline')+')')}D.sbusy=false;W.render()});
 

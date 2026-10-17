@@ -8,7 +8,7 @@ function ensure(){if(bar)return;bar=document.createElement('div');bar.id='bbar';
  pan=document.createElement('div');pan.id='morep';pan.hidden=true;document.body.appendChild(pan);
  document.addEventListener('click',e=>{const m=e.target.closest('[data-nav-more]');if(m){pan.hidden=!pan.hidden;return}if(!pan.hidden&&(e.target.closest('#morep a')||!e.target.closest('#morep')))pan.hidden=true});
  document.addEventListener('keydown',e=>{if(e.key=='Escape')pan.hidden=true});addEventListener('hashchange',()=>{pan.hidden=true})}
-window.WN_NAVR=function(NAV,cur){ensure();const by={};NAV.forEach(n=>by[n[0]]=n);
+window.WN_NAVR=function(NAV,cur){ensure();const V=(window.WN_CFG||{}).views;if(V)NAV=NAV.filter(n=>V.includes(n[0]));const by={};NAV.forEach(n=>by[n[0]]=n);
  const link=(id,cls)=>by[id]?`<a href="#/${id}" class="${cls||''} ${id==cur?'on':''}" ${id==cur?'aria-current="page"':''}>${esc(by[id][1])}</a>`:'';
  const inMore=!PRIMARY.includes(cur);
  bar.innerHTML=MOBILE.map(id=>link(id,'bb')).join('')+`<button class="bb ${!MOBILE.includes(cur)?'on':''}" data-nav-more aria-haspopup="true">More</button>`;
