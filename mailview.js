@@ -38,5 +38,16 @@ function vInbox(){if(D.items===null)load();const L=D.items||[];
  return '<div class="vh"><h1>Inbox</h1><p class="mut">Recent emails. Click one to read it in full.</p></div><div class="row seg"><button class="btn sm '+(D.all?'alt':'')+'" data-mv-f="0">Important</button><button class="btn sm '+(D.all?'':'alt')+'" data-mv-f="1">All, including newsletters</button></div><div class="card">'
   +(!S.authed?'<div class="empty">Sign in to see your inbox.</div>':D.items===null?'<div class="empty">Loading…</div>':!L.length?'<div class="empty">No emails yet.</div>':L.map(m=>'<a class="item srhit" href="#/inbox" data-email="'+esc(m.ref)+'"><div class="t">'+(m.needs_owner&&m.status!=='resolved'?'● ':'')+esc(m.subject||'(no subject)')+'</div><div class="mut sm">'+esc(m.from_name||m.from_addr||'')+(m.from_name&&m.from_addr?' &lt;'+esc(m.from_addr)+'&gt;':'')+' · '+esc(fd(m.date))+(m.draft_id?' · reply drafted':'')+(m.status==='resolved'?' · done':'')+'</div><div class="sm">'+esc(clean(m.preview).slice(0,160))+'</div></a>').join(''))+'</div>'}
 document.addEventListener('click',ev=>{const b=ev.target.closest('[data-mv-f]');if(b){D.all=b.dataset.mvF==='1';D.items=null;W.render()}});
-W.view('inbox','Inbox',vInbox,'tasks');
+// ---- VIP senders editor ----
+const V={v:null,busy:false,msg:''};
+async function vload(){if(V.busy||!S.authed)return;V.busy=true;try{V.v=await api('/vip-senders')}catch(e){V.v=V.v||{names:[],addresses:[]}}V.busy=false;if((location.hash||'').startsWith('#/inbox'))W.render()}
+function vipCard(){if(!S.authed)return'';if(V.v===null){vload();return''}
+ return '<div class="card"><h3>VIP senders</h3><p class="mut sm">Mail from these first names (or addresses) is always marked Important, pinned on Home and gets a draft reply.</p><label class="sm">First names, comma separated<input data-vip-n value="'+esc((V.v.names||[]).join(', '))+'"></label><label class="sm">Addresses, comma separated<input data-vip-a value="'+esc((V.v.addresses||[]).join(', '))+'"></label><div class="row"><button class="btn sm" data-vip-save>Save VIP list</button><span class="mut sm">'+esc(V.msg)+'</span></div></div>'}
+document.addEventListener('click',async ev=>{if(!ev.target.closest('[data-vip-save]'))return;const sp=x=>String(x||'').split(',').map(t=>t.trim()).filter(Boolean);
+ const n=sp(document.querySelector('[data-vip-n]')?.value),a=sp(document.querySelector('[data-vip-a]')?.value);
+ try{V.v=await api('/vip-senders',{method:'PUT',body:JSON.stringify({names:n,addresses:a})});V.msg='Saved'}catch(e){V.msg=(e&&e.message)||'Could not save'}W.render()});
+// ---- deep link #/inbox/<ref> opens the email ----
+function deep(){const m=(location.hash||'').match(/^#\/inbox\/([^?&]+)/);if(m&&window.WN_openEmail&&S.authed){const r=decodeURIComponent(m[1]);history.replaceState(null,'','#/inbox');W.render&&W.render();window.WN_openEmail(r)}else if(m&&!S.authed)setTimeout(deep,800)}
+window.addEventListener('hashchange',deep);setTimeout(deep,600);
+W.view('inbox','Inbox',()=>vInbox()+vipCard(),'tasks');
 })();
