@@ -1,8 +1,8 @@
 // Grouped navigation: short top bar on desktop, bottom bar + "More" sheet on mobile.
 (function(){'use strict';const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const PRIMARY=['setup','home','tasks','calendar','contacts','followups','documents','projects','search'];
+const PRIMARY=['setup','home','inbox','tasks','calendar','contacts','followups','documents','projects','search'];
 const MOBILE=['setup','home','tasks','calendar'];
-const GROUPS=[['Today',['setup','home','overview','brief','focus','capture','activity']],['Work',['tasks','calendar','notes','projects','decisions','prep']],['People',['contacts','followups','vips','staff']],['Files and search',['documents','search','memory']],['Assistant',['arthur','connections']]];
+const GROUPS=[['Today',['setup','home','inbox','overview','brief','focus','capture','activity']],['Work',['tasks','calendar','notes','projects','decisions','prep']],['People',['contacts','followups','vips','staff']],['Files and search',['documents','search','memory']],['Assistant',['arthur','connections']]];
 let bar,pan;
 function ensure(){if(bar)return;bar=document.createElement('div');bar.id='bbar';bar.setAttribute('role','navigation');bar.setAttribute('aria-label','Quick navigation');document.body.appendChild(bar);
  pan=document.createElement('div');pan.id='morep';pan.hidden=true;document.body.appendChild(pan);
