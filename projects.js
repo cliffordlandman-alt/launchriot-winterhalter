@@ -6,7 +6,7 @@ const ref=()=>(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.ran
 const D={p:[],home:null,feed:[],ff:'all',lim:50,loaded:false,fl:false,busy:false};S.pj=D;const arr=W.arr;
 const day=iso=>iso?W.dkey(iso):'';
 async function refresh(){if(!S.authed||D.busy)return;D.busy=true;
- const [p,h,f]=await Promise.all([api('/projects?status=open_all').catch(()=>null),api('/home').catch(()=>null),api('/feed?filter='+D.ff+'&limit='+D.lim).catch(()=>null)]);
+ const [p,h,f]=await Promise.all([api('/projects?status=open_all').catch(()=>null),api('/home').catch(()=>null),api('/feed?filter='+D.ff+'&limit='+D.lim).catch(()=>null),api('/calendar/days?n=3').then(r=>{D.days=r.days||[]}).catch(()=>null)]);
  D.busy=false;if(p)D.p=arr(p);if(h)D.home=h;if(f){D.feed=arr(f);D.fl=true}D.loaded=true;if(!document.querySelector('.modal'))W.render()}
 W.onLoad(async()=>{if(!D.loaded)refresh()});
 async function act(fn,msg){try{await fn();if(msg)toast(msg);D.busy=false;await refresh();return true}catch(e){toast(e.status==409?'A project with that name already exists.':'Could not save ('+(e.status||'offline')+'). Nothing was changed.');return false}}
@@ -15,16 +15,27 @@ const ST={planning:'Planning',active:'Active',on_hold:'On hold',completed:'Compl
 // ---- Home ----
 const LINK={task:'tasks',followup:'followups',decision:'projects',project:'projects',milestone:'projects',event:'calendar'};
 function sect(t,items,row){return items&&items.length?`<div class="card"><h2>${t}</h2>${items.map(row).join('')}</div>`:''}
+function meet3(){const L=D.days;if(!L)return '<div class="card" data-meet3><h2>Meetings</h2><div class="mut">Loading…</div></div>';
+ const J=/^https:\/\/([\w.-]*\.)?(teams\.microsoft\.com|teams\.live\.com|zoom\.us|meet\.google\.com|webex\.com)\//i;
+ return '<div class="card" data-meet3><h2>Meetings</h2><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">'+L.map(d=>'<div><h3 style="margin:0 0 6px">'+esc(d.label)+(d.label!==d.date_label?' <span class="mut sm">'+esc(d.date_label)+'</span>':'')+'</h3>'
+  +(d.items.length?d.items.map(m=>{const lk=m.link&&J.test(m.link)?m.link:null;return '<div class="item srhit" data-meet="'+esc(m.id)+'" style="cursor:pointer"><div class="t">'+esc(m.time)+' · '+esc(m.title||'(no title)')+'</div><div class="mut sm">'+(m.location&&!/^https?:/i.test(m.location)?esc(m.location)+' · ':'')+esc(String(m.calendar||'').replace(/^ical:\d+$/,'Calendar'))+(lk?' · <a class="btn sm" href="'+esc(lk)+'" target="_blank" rel="noopener noreferrer" data-join>Join</a>':'')+'</div></div>'}).join(''):'<div class="mut">No meetings</div>')+'</div>').join('')+'</div></div>'}
+function meetOpen(id){const m=(D.days||[]).flatMap(d=>d.items).find(x=>String(x.id)===String(id));if(!m)return;
+ const ov=document.createElement('div');ov.setAttribute('data-meetmodal','');ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center';
+ const dt=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dubai',weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}).format(new Date(m.starts_at));
+ const safe=m.link&&/^https:\/\//.test(m.link)?m.link:null;
+ ov.innerHTML='<div class="card" style="max-width:520px;width:92%"><h2>'+esc(m.title||'(no title)')+'</h2><p><b>'+esc(dt)+'</b> · '+esc(m.time)+' <span class="mut sm">(Dubai time)</span></p>'+(m.location?'<p>Where: '+esc(m.location)+'</p>':'')+'<p class="mut">Calendar: '+esc(String(m.calendar||'').replace(/^ical:\d+$/,'Calendar'))+'</p><div class="row">'+(safe?'<a class="btn" href="'+esc(safe)+'" target="_blank" rel="noopener noreferrer">Join</a> ':'')+'<a class="btn alt" href="#/calendar" data-meetclose>Open calendar</a> <button class="btn alt" data-meetclose>Close</button></div></div>';
+ document.body.appendChild(ov);ov.addEventListener('click',e=>{if(e.target===ov||e.target.closest('[data-meetclose]'))ov.remove()})}
+document.addEventListener('click',e=>{if(e.target.closest('[data-join]'))return;const r=e.target.closest('[data-meet]');if(r){e.preventDefault();meetOpen(r.dataset.meet)}});
 function vHome(){const h=D.home;
  let b=head(W.greet?W.greet()+', '+(window.WN_NAME||'there')+'.':'Home','Everything that needs you today, in one place.');
  if(!S.authed)return b;if(!h)return b+'<div class="card empty">Loading your day…</div>';
  const c=h.counts||{};
- if(h.empty)b+='<div class="card calm"><h2>Nothing needs you today.</h2><p class="mut">No meetings, due items or open decisions right now. Add a task or a follow-up and it will show here.</p></div>';
+ if(h.empty)b+=meet3()+'<div class="card calm"><h2>Nothing needs you today.</h2><p class="mut">No meetings, due items or open decisions right now. Add a task or a follow-up and it will show here.</p></div>';
  else{
   b+=`<div class="tiles tiles4"><a class="tile" href="#/projects"><b>${arr(h.pending_decisions).length}</b><span>Needs decision</span></a><a class="tile" href="#/calendar"><b>${arr(h.meetings_today).length}</b><span>Meetings today</span></a><a class="tile" href="#/tasks"><b>${arr(h.tasks_due_today).length+arr(h.overdue_tasks).length}</b><span>Tasks due or overdue</span></a><a class="tile" href="#/followups"><b>${arr(h.followups_due_today).length+arr(h.overdue_followups).length}</b><span>Follow-ups due</span></a></div>`;
+  b+=meet3();
   b+=sect('Needs your attention',h.needs_attention,x=>`<a class="item srhit" href="#/${LINK[x.type]||'home'}"${x.email_ref?` data-email="${esc(x.email_ref)}"`:''}><div class="t">${x.vip?'<span class="badge" style="background:#b8860b;color:#fff;border-radius:4px;padding:0 6px;font-size:11px;margin-right:6px">VIP · Important</span>':''}${esc(x.title)}</div><div class="mut sm">${x.from?esc(x.from)+' · ':''}${x.email_ref?'email · ':''}${esc(String(x.type||'').replace('_',' '))}</div></a>`);
   b+=sect('Emails waiting for your reply',h.replies_waiting,r=>`<a class="item srhit" href="#/setup" data-email="${esc(r.email_ref||r.id)}"><div class="t">${esc(r.subject||'(no subject)')}</div><div class="mut sm">${esc(r.from||'')} · ${esc(W.dl(r.received_at))}</div></a>`);
-  b+=sect('Meetings today',h.meetings_today,m=>`<div class="item"><div class="t">${esc(W.tm(m.starts_at||m.at))} · ${esc(m.title||'(no title)')}</div></div>`);
   b+=sect('Overdue tasks',h.overdue_tasks,t=>`<div class="item"><div class="t">${esc(t.title)}</div><div class="late sm">Due ${esc(day(t.deadline))}</div></div>`);
   b+=sect('Overdue follow-ups',h.overdue_followups,t=>`<div class="item"><div class="t">${esc(t.subject)}</div><div class="late sm">${esc(t.person||'')} · due ${esc(day(t.follow_up_date))}</div></div>`);
   b+=sect('Coming up this week',h.upcoming_meetings,m=>`<div class="item"><div class="t">${esc(W.dl(m.starts_at))} ${esc(W.tm(m.starts_at))} · ${esc(m.title||'(no title)')}</div></div>`);

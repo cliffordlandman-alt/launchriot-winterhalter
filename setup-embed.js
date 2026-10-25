@@ -153,23 +153,50 @@ function wireInbox(){
   else if(act==='resolve')req('/inbox/messages/'+encodeURIComponent(id)+'/resolve',{method:'POST',body:'{}'}).then(function(){return done()}).catch(fail);
  }});
 }
+
+/* ---- lean view + Ask the LaunchRiot team ---- */
+var cal={n:null},sup={items:null,msg:'',busy:false,file:null};
+function calLoad(){req('/calendar/feeds').then(function(r){var k=(r.feeds||[]).length;if(k!==cal.n){cal.n=k;render()}}).catch(function(){})}
+function inboxHtmlLean(){if(!usable())return '';var full=inboxHtml(),i=full.indexOf('<section class="card" data-sec="drafts"'),j=full.indexOf('<section class="card" data-sec="attn"');
+ return '<h1 class="sech">Your assistant</h1>'+(i>=0?full.slice(i,j>i?j:undefined):'')}
+var STL={open:'Open',in_progress:'In progress',done:'Done'};
+function supLoad(){if(!usable())return;if(cal.n==null)calLoad();req('/support/requests').then(function(r){sup.items=r.items||[];if(!formBusy2())render()}).catch(function(){if(sup.items===null){sup.items=[];render()}})}
+function formBusy2(){var a=document.activeElement;return a&&a.id==='supt'&&a.value}
+function supportHtml(){if(!usable())return '';if(sup.items===null){supLoad();}
+ var L=sup.items||[];
+ return '<section class="card" data-sec="support"><h2>Ask the LaunchRiot team</h2><p class="mut">Need something changed or have a question? Write it here and the LaunchRiot team will reply on this page.</p>'
+ +'<form id="supf" novalidate><textarea id="supt" rows="3" aria-label="Your request" placeholder="Type your request..."></textarea><div class="btns2"><input type="file" id="supa" aria-label="Attach a file"> <button class="btn" type="submit" id="supb">Send request</button></div><div class="mut" role="status" id="supm">'+esc(sup.msg)+'</div></form>'
+ +(sup.items===null?'<p class="mut">Loading...</p>':!L.length?'<p class="mut">No requests yet.</p>':'<h3>Your requests</h3>'+L.map(function(r){return '<div class="draft" data-sup="'+esc(r.id)+'"><div><span class="pill">'+esc(STL[r.status]||r.status)+'</span> <span class="mut">'+esc(fdate(r.created_at))+'</span></div><p style="white-space:pre-wrap">'+esc(r.text)+'</p>'+(r.attachment_name?'<p class="mut">Attached: '+esc(r.attachment_name)+'</p>':'')
+  +(r.replies||[]).map(function(p){return '<div style="border-left:3px solid #3a7;padding:4px 10px;margin:6px 0"><b>LaunchRiot team</b> <span class="mut">'+esc(fdate(p.at))+'</span><p style="white-space:pre-wrap;margin:4px 0 0">'+esc(p.body)+'</p></div>'}).join('')+'</div>'}).join(''))+'</section>'}
+function wireSupport(){var f=document.getElementById('supf');if(!f)return;
+ f.onsubmit=function(e){e.preventDefault();if(sup.busy)return;var t=document.getElementById('supt').value.trim(),fi=document.getElementById('supa').files[0],m=document.getElementById('supm');
+  if(!t){m.textContent='Please type your request.';return}
+  if(fi&&fi.size>8e6){m.textContent='That file is too large (max 8 MB).';return}
+  sup.busy=true;m.textContent='Sending...';
+  var go=function(att){req('/support/requests',{method:'POST',body:JSON.stringify({text:t,attachment:att})}).then(function(){sup.busy=false;sup.msg='Sent. The LaunchRiot team will reply here.';document.getElementById('supt').value='';supLoad()}).catch(function(){sup.busy=false;m.textContent='Could not send, please try again.'})};
+  if(!fi)return go(null);var rd=new FileReader();rd.onload=function(){go({name:fi.name,type:fi.type,data:String(rd.result).split(',')[1]||''})};rd.onerror=function(){sup.busy=false;m.textContent='Could not read that file.'};rd.readAsDataURL(fi)}}
+setInterval(function(){if(usable()&&document.querySelector('[data-sec=support]'))supLoad()},60000);
+setTimeout(calLoad,1500);
 var STEPS=[['whatsapp','Connect WhatsApp'],['gmail','Connect Gmail'],['outlook','Connect Outlook']];
 function render(){
  if(locked)return;
- var all=STEPS.every(function(s){return st&&st[s[0]]===true}),n=STEPS.filter(function(s){return st&&st[s[0]]===true}).length;
- var active=tr&&tr.status==='active',h='<h1>Set up your workspace</h1><p class="mut">Three quick steps. '+n+' of 3 done.</p>';
- if(!active)h+='<div class="timer" id="timer"><div><div class="mut">Trial time left</div><div class="t" id="clock">--:--:--</div></div><div class="mut">of your 48-hour trial</div></div>';
- if(all)h+='<div class="card alldone"><h2>All set</h2><p class="mut">Everything is connected. Your LaunchRiot contact will take it from here.</p></div>';
- STEPS.forEach(function(s,i){var d=st&&st[s[0]]===true;
-  h+='<section class="card'+(d?' done':'')+'" data-step="'+s[0]+'"><div class="step '+(d?'done':'')+'"><span class="num">'+(d?'&#10003;':(i+1))+'</span><div class="tx"><h2>'+s[1]+'</h2></div><span class="pill">'+(d?'Done':'Not done')+'</span></div>'+(d?(s[0]==='gmail'?discBody():(s[0]==='whatsapp'?waDoneBody():'')):'<div class="body">'+stepBody(s[0])+'</div>')+'</section>'});
- var pl=pkgOptions();
- if(pl.length){
-  h+='<section class="card"><h2>Your package</h2><p class="mut">Pick the one that suits you. You can change it later.</p><select id="pkg" aria-label="Package">'+pl.map(function(p){return '<option value="'+esc(p.id)+'"'+(p.id===curPkg()?' selected':'')+'>'+esc(p.label)+'</option>'}).join('')+'</select> <span class="mut" id="pkgmsg" role="status"></span></section>'}
- h+=inboxHtml();
+ var all=STEPS.every(function(s){return st&&st[s[0]]===true}),n=STEPS.filter(function(s){return st&&st[s[0]]===true}).length,calOk=cal.n==null||cal.n>0;
+ var active=tr&&tr.status==='active',h='';
+ if(!all||!calOk){h='<h1>Set up your workspace</h1><p class="mut">'+n+' of 3 steps done. Finished steps are hidden. You can manage them any time under <a href="#/connections">Connections</a>.</p>';
+  if(!active)h+='<div class="timer" id="timer"><div><div class="mut">Trial time left</div><div class="t" id="clock">--:--:--</div></div><div class="mut">of your 48-hour trial</div></div>';
+  STEPS.forEach(function(s,i){var d=st&&st[s[0]]===true;if(d)return;
+   h+='<section class="card" data-step="'+s[0]+'"><div class="step"><span class="num">'+(i+1)+'</span><div class="tx"><h2>'+s[1]+'</h2></div><span class="pill">Not done</span></div><div class="body">'+stepBody(s[0])+'</div></section>'});
+  if(!calOk)h+='<section class="card" data-step="calendar"><div class="step"><span class="num">4</span><div class="tx"><h2>Connect your calendar</h2></div><span class="pill">Not done</span></div><div class="body"><p>Add your calendar address under <a href="#/connections">Connections</a> so your meetings show on Home.</p></div></section>';
+  var pl=pkgOptions();
+  if(pl.length){
+   h+='<section class="card"><h2>Your package</h2><p class="mut">Pick the one that suits you. You can change it later.</p><select id="pkg" aria-label="Package">'+pl.map(function(p){return '<option value="'+esc(p.id)+'"'+(p.id===curPkg()?' selected':'')+'>'+esc(p.label)+'</option>'}).join('')+'</select> <span class="mut" id="pkgmsg" role="status"></span></section>'}
+ }
+ h+=(all&&calOk)?inboxHtmlLean():inboxHtml();
+ h+=supportHtml();
  var keep=document.activeElement&&document.activeElement.id;
  app.innerHTML=h;
  var sel=document.getElementById('pkg');if(sel){sel.onchange=function(){savePkg(sel.value)};if(keep==='pkg')sel.focus()}
- wireForms();wireInbox();tick();waEnsure();inboxStart();
+ wireForms();wireInbox();wireSupport();tick();waEnsure();inboxStart();
 }
 function curPkg(){return pkgSel!=null?pkgSel:(st&&st.package)||(team&&team.package)}
 function pkgOptions(){var L=st&&st.package_labels,ids=(st&&st.package_types)||[],out=[];
