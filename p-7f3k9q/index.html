@@ -52,7 +52,7 @@ var P=new URLSearchParams(location.search),cs=P.get('case');
 var d=JSON.parse(JSON.stringify(DATA));
 if(cs==='noname')d.first='';if(cs==='novertical')d.vertical='';if(cs==='nowaiting')d.waiting=[];if(cs==='nomeetings')d.meetings=[];
 if(cs==='meetings'||cs==='nowaiting'){var t=new Date(Date.now()+90*6e4);d.meetings=[{at:t.toISOString(),title:'Service contract review',vip:'Peter',org:'',loc:''}]}
-if(cs==='allempty'){d.waiting=[];d.meetings=[];}
+if(cs==='old')d.waiting[0].due='2026-10-19';if(cs==='allempty'){d.waiting=[];d.meetings=[];}
 var tz=d.tz||Intl.DateTimeFormat().resolvedOptions().timeZone,$=function(i){return document.getElementById(i)};
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 var anim=!sessionStorage.getItem('lr_moment')&&!P.has('instant');if(P.has('replay'))anim=true;sessionStorage.setItem('lr_moment','1');
@@ -69,7 +69,7 @@ function render(d){var out=[],seen={},add=function(o,who){if(out.length>=3)retur
  var ms=(d.meetings||[]).filter(function(x){return dayK(x.at)===today}).sort(function(a,b){return new Date(a.at)-new Date(b.at)});
  var wt=(d.waiting||[]).filter(function(x){return x.due<=today}).sort(function(a,b){return a.due<b.due?-1:1});
  var meet=function(x){return {h:'<span class="tm">'+esc(hm(x.at))+'</span> \u00b7 '+esc(x.title),s:x.vip?'With '+esc(x.vip)+(x.org?', '+esc(x.org):''):(x.loc?esc(x.loc):''),r:'/#/calendar'}};
- var wait=function(x){return {h:esc(x.title),s:x.due>=today?'Ready when you are':'Waiting since '+new Date(x.due).toLocaleDateString('en-GB',{weekday:'short'}),r:'/'+(x.ref||'#/home')}};
+ var wait=function(x){return {h:esc(x.title),s:x.due>=today?'Ready when you are':'Waiting since '+new Date(x.due+'T12:00:00').toLocaleDateString('en-GB',{timeZone:tz,weekday:'short',day:'numeric',month:'short'}).replace(',',''),r:'/'+(x.ref||'#/home')}};
  var nx=ms.find(function(x){var t=new Date(x.at)-Date.now();return t>-36e5&&t<4*36e5});if(nx)add(meet(nx),nx.vip);
  wt.forEach(function(x){add(wait(x),x.person)});
  (d.vips||[]).forEach(function(v){var n=(d.waiting||[]).filter(function(x){return x.person===v.name}).length+ms.filter(function(x){return x.vip===v.name}).length;if(n)add({h:esc(v.name)+(v.org?' \u00b7 '+esc(v.org):''),s:n+(n>1?' things':' thing')+' open with them',r:'/#/contacts'},v.name)});
@@ -79,9 +79,9 @@ function render(d){var out=[],seen={},add=function(o,who){if(out.length>=3)retur
  var html=out.map(function(o,i){return '<a class="it" href="'+o.r+'" style="animation-delay:'+(1.85+i*.15)+'s"><i></i><div><b>'+o.h+'</b>'+(o.s?'<small>'+o.s+'</small>':'')+'</div></a>'}).join('');
  if(q)html+='<div class="it q" style="animation-delay:'+(1.85+out.length*.15)+'s"><i></i><div><b>'+q+'</b></div></div>';
  $('items').innerHTML=html;
- var c=d.counts||{};$('ct').innerHTML='<span><b>'+(c.waiting||0)+'</b>waiting</span><span><b>'+(c.meetings||0)+'</b>meetings today</span><span><b>'+(c.followups||0)+'</b>follow-ups</span>'}
+ var c={waiting:(d.waiting||[]).length,meetings:ms.length,followups:(d.followups||[]).length};$('ct').innerHTML='<span><b>'+(c.waiting||0)+'</b>waiting</span><span><b>'+(c.meetings||0)+'</b>meetings today</span><span><b>'+(c.followups||0)+'</b>follow-ups</span>'}
 if(cs==='slow'||cs==='fail'){$('lab').textContent='What needs you today';$('items').innerHTML='<div class="ph"></div><div class="ph"></div>';
- setTimeout(function(){if(cs==='fail'){$('items').innerHTML='<div class="it q" style="animation:none;opacity:1"><i></i><div><b>Today\u2019s list will appear here shortly.</b></div></div>'}else{m.classList.remove('anim');render(d)}},cs==='fail'?2500:2500)}
+ var tries=0;function load(){setTimeout(function(){if(cs==='fail'&&(tries++===0||P.get('retry')!=='ok')){$('items').innerHTML='<div class="it q" style="animation:none;opacity:1"><i></i><div><b>Today\u2019s list will appear here shortly.</b></div></div>';if(tries===1)load()}else{m.classList.remove('anim');render(d)}},tries?10000:2500)}load()}
 else render(d);
 })();
 </script></body></html>
