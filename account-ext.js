@@ -26,7 +26,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElement
 if(RESET){try{sessionStorage.setItem('wn-asked','1')}catch(e){}const go=()=>setTimeout(resetBox,300);if(document.readyState==='loading')addEventListener('DOMContentLoaded',go);else go()}
 W.onLoad(()=>{if(RESET)return;window.WN_PWCHECK();loadConn()});
 async function loadConn(){if(!W.S.authed)return;try{conn=await W.api('/connections');const cs=(conn.calendar&&conn.calendar.accounts)||[];upc=cs.length?W.arr(await W.api('/calendar/upcoming?days=14')):null}catch(e){}if(cur()==='connections'&&!busy&&!document.activeElement.closest('#cxs form'))W.render()}
-const cur=()=>(location.hash.replace(/^#\/?/,'').split('/')[0])||'setup';
+const cur=()=>(location.hash.replace(/^#\/?/,'').split('/')[0])||'home';
 const row=(n,s,a)=>'<div class="item" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><div><div class="t">'+esc(n)+'</div><div class="mut sm">'+s+'</div></div><div class="row">'+a+'</div></div>';
 const ol=a=>'<ol>'+a.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ol>';
 window.WN_CONN=function(){if(!W.S.authed)return '<h1>Connections</h1>'+W.needAuth();if(!conn){setTimeout(loadConn,0);return '<h1>Connections</h1><div class="card"><div class="empty">Loading…</div></div>'}

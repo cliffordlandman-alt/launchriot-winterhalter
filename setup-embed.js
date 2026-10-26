@@ -231,5 +231,5 @@ window.LR_SETUP={mount:function(root,api,token){
  if(changed){st=null;tr=null;locked=false;wa={state:null,url:null,connected:false,phone:null}}
  if(locked)return lockScreen();
  if(st&&tr)return render();
- if(!starting)start()},unmount:function(){holder=null}};
+ if(starting)return loading();start()},unmount:function(){holder=null}};
 })();

@@ -2,6 +2,6 @@
 window.WN_CFG={
   mode:'live', demo:false,
   apiBase:'https://api-gareth-ws.145-241-118-107.sslip.io',
-  views:['setup','home','inbox','tasks','calendar','notes','contacts','followups','documents','projects','activity','search','connections']
+  views:['home','setup','inbox','tasks','calendar','notes','contacts','followups','documents','projects','activity','search','connections']
 };
 window.WN_NAME='Gareth';

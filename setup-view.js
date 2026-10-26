@@ -1,7 +1,7 @@
 // Landing view: setup steps + assistant area (setup-embed.js) inside the workspace; global lock screen.
 (function(){'use strict';const W=window.WN,C=window.WN_CFG||{},esc=W.esc;
 const tok=()=>{try{return localStorage.getItem('wn-tok')||''}catch(e){return ''}};
-W.view('setup','Assistant',()=>W.needAuth()||'<div id="setup-root"></div>','home');
+W.view('setup','Assistant',()=>W.needAuth()||'<div id="setup-root"><div class="card empty">Loading your assistant…</div></div>','home');
 window.WN_AFTER=function(id){if(id!=='setup'){window.LR_SETUP&&LR_SETUP.unmount();return}
  const r=document.getElementById('setup-root');if(r&&W.S.authed&&tok())LR_SETUP.mount(r,C.apiBase,tok())};
 // same lock screen for every screen when access has ended (403 locked)
