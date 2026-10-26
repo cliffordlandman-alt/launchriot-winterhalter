@@ -7,7 +7,7 @@ const D={p:[],home:null,feed:[],ff:'all',lim:50,loaded:false,fl:false,busy:false
 const day=iso=>iso?W.dkey(iso):'';
 async function refresh(){if(!S.authed||D.busy)return;D.busy=true;
  const [p,h,f]=await Promise.all([api('/projects?status=open_all').catch(()=>null),api('/home').catch(()=>null),api('/feed?filter='+D.ff+'&limit='+D.lim).catch(()=>null),api('/calendar/days?n=3').then(r=>{D.days=r.days||[]}).catch(()=>null)]);
- D.busy=false;if(p)D.p=arr(p);if(h)D.home=h;if(f){D.feed=arr(f);D.fl=true}D.loaded=true;if(!document.querySelector('.modal'))W.render()}
+ D.busy=false;if(p)D.p=arr(p);D.homeErr=!h;if(h)D.home=h;if(f){D.feed=arr(f);D.fl=true}D.loaded=true;if(!document.querySelector('.modal'))W.render()}
 W.onLoad(async()=>{if(!D.loaded)refresh()});
 async function act(fn,msg){try{await fn();if(msg)toast(msg);D.busy=false;await refresh();return true}catch(e){toast(e.status==409?'A project with that name already exists.':'Could not save ('+(e.status||'offline')+'). Nothing was changed.');return false}}
 const head=(t,s)=>`<h1>${t}</h1><p class="sub">${s}</p>${!S.authed?'<div class="notice">Sign in to use your workspace. <button class="btn sm" data-act="login">Sign in</button></div>':!S.online?'<div class="notice">'+esc(S.err)+'</div>':''}`;
@@ -26,7 +26,7 @@ function meetOpen(id){const m=(D.days||[]).flatMap(d=>d.items).find(x=>String(x.
  ov.innerHTML='<div class="card" style="max-width:520px;width:92%"><h2>'+esc(m.title||'(no title)')+'</h2><p><b>'+esc(dt)+'</b> · '+esc(m.time)+' <span class="mut sm">(Dubai time)</span></p>'+(m.location?'<p>Where: '+esc(m.location)+'</p>':'')+'<p class="mut">Calendar: '+esc(String(m.calendar||'').replace(/^ical:\d+$/,'Calendar'))+'</p><div class="row">'+(safe?'<a class="btn" href="'+esc(safe)+'" target="_blank" rel="noopener noreferrer">Join</a> ':'')+'<a class="btn alt" href="#/calendar" data-meetclose>Open calendar</a> <button class="btn alt" data-meetclose>Close</button></div></div>';
  document.body.appendChild(ov);ov.addEventListener('click',e=>{if(e.target===ov||e.target.closest('[data-meetclose]'))ov.remove()})}
 document.addEventListener('click',e=>{if(e.target.closest('[data-join]'))return;const r=e.target.closest('[data-meet]');if(r){e.preventDefault();meetOpen(r.dataset.meet)}});
-function vHome(){const h=D.home;
+function vHome(){if(window.WN_HOME2)return window.WN_HOME2(D,{meet3,sect,refresh,day});const h=D.home;
  let b=head(W.greet?W.greet()+', '+(window.WN_NAME||'there')+'.':'Home','Everything that needs you today, in one place.');
  if(!S.authed)return b;if(!h)return b+'<div class="card empty">Loading your day…</div>';
  const c=h.counts||{};
