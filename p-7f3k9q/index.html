@@ -1,48 +1,87 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="robots" content="noindex,nofollow"><title>Good day, Gareth</title><meta name="theme-color" content="#0d0f12">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#FAF6F0"><title>Today</title>
 <style>
-:root{--bg:#0d0f12;--ink:#f3efe6;--mut:#8f958f;--line:#24282c;--acc:#9fe3c4;--warm:#e9c98f}
-*{box-sizing:border-box;margin:0}html,body{background:var(--bg);color:var(--ink)}
-body{font:16px/1.55 Inter,system-ui,sans-serif;min-height:100svh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-body:before{content:"";position:fixed;inset:-20% -10% auto;height:70vh;background:radial-gradient(60% 60% at 30% 30%,rgba(159,227,196,.10),transparent 70%),radial-gradient(50% 50% at 80% 10%,rgba(233,201,143,.08),transparent 70%);animation:glow 9s ease-in-out infinite alternate;pointer-events:none}
-@keyframes glow{to{transform:translateY(4vh) scale(1.05)}}
-main{max-width:620px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 9vh) 28px 64px;position:relative}
-.r{opacity:0;transform:translateY(14px);animation:in .9s cubic-bezier(.2,.7,.2,1) forwards}
-@keyframes in{to{opacity:1;transform:none}}
-.time{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--mut);animation-delay:.1s}
-h1{font:300 clamp(44px,12vw,76px)/1.02 Fraunces,Georgia,serif;letter-spacing:-.02em;margin:18px 0 0;animation-delay:.35s}
-h1 em{font-style:italic;color:var(--warm)}
-.know{font:300 clamp(19px,5vw,23px)/1.4 Fraunces,Georgia,serif;color:#cfd3cc;margin-top:22px;max-width:30ch;animation-delay:1.1s}
-.rule{height:1px;background:var(--line);margin:40px 0 28px;transform-origin:left;transform:scaleX(0);animation:line 1.2s 1.8s cubic-bezier(.2,.7,.2,1) forwards}
-@keyframes line{to{transform:scaleX(1)}}
-.lab{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--mut);animation-delay:2.1s}
-.m{display:flex;gap:16px;padding:20px 0;border-bottom:1px solid var(--line)}
-.m:nth-of-type(1){animation-delay:2.5s}.m:nth-of-type(2){animation-delay:2.9s}.m:nth-of-type(3){animation-delay:3.3s}
-.dot{flex:none;width:8px;height:8px;border-radius:50%;margin-top:11px;background:var(--warm);box-shadow:0 0 0 0 rgba(233,201,143,.5);animation:pulse 2.4s 4s infinite}
-.dot.c{background:var(--acc);animation:none}
-@keyframes pulse{70%{box-shadow:0 0 0 9px rgba(233,201,143,0)}100%{box-shadow:0 0 0 0 rgba(233,201,143,0)}}
-.m p{font:400 clamp(19px,5.2vw,22px)/1.4 Fraunces,Georgia,serif}.m small{display:block;color:var(--mut);font:13px/1.5 Inter,sans-serif;margin-top:6px}
-.calm{margin-top:34px;color:var(--mut);font-size:15px;animation-delay:3.9s}.calm b{color:var(--acc);font-weight:500}
-.go{display:inline-flex;align-items:center;gap:10px;margin-top:40px;color:var(--ink);text-decoration:none;font-size:15px;border:1px solid var(--line);border-radius:999px;padding:13px 22px;animation-delay:4.4s;transition:border-color .3s}
-.go:hover{border-color:var(--acc)}.go span{transition:transform .3s}.go:hover span{transform:translateX(4px)}
-.sig{margin-top:56px;font-size:12px;color:#5d635e;letter-spacing:.08em;animation-delay:4.8s}
-@media(min-width:900px){main{max-width:760px;padding-top:14vh}.know{max-width:34ch}}
-@media(prefers-reduced-motion:reduce){.r,.rule{animation:none;opacity:1;transform:none}}
-</style></head><body><main>
-<div class="time r" id="t">Monday · Dubai</div>
-<h1 class="r"><span id="g">Good afternoon</span>,<br><em>Gareth.</em></h1>
-<p class="know r">Kitchens across the UAE are running on Winterhalter today. Here is the little that needs the director.</p>
-<div class="rule"></div>
-<div class="lab r">Only you can do these</div>
-<div class="m r"><i class="dot"></i><div><p>Peter is free to talk now and is waiting on your call.</p><small>WhatsApp · this morning · VIP</small></div></div>
-<div class="m r"><i class="dot"></i><div><p>Mohamed is releasing both POs and has sent through T2, T4 and T5. He'll want a reply.</p><small>WhatsApp · today</small></div></div>
-<div class="m r"><i class="dot c"></i><div><p>Nothing on your calendar today or tomorrow. The afternoon is yours.</p><small>Calendar · next 48 hours</small></div></div>
-<p class="calm r"><b>Everything else is handled.</b> 52 personal messages and promotions were kept off your desk.</p>
-<a class="go r" href="/#/home">See the full picture <span>→</span></a>
-<div class="sig r">Your Winterhalter workspace</div>
-</main><script>
-(function(){const n=new Date(),o={timeZone:'Asia/Dubai'};const h=+n.toLocaleString('en-GB',{...o,hour:'2-digit',hour12:false});
-document.getElementById('g').textContent=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
-document.getElementById('t').textContent=n.toLocaleDateString('en-GB',{...o,weekday:'long',day:'numeric',month:'long'})+' · '+n.toLocaleTimeString('en-GB',{...o,hour:'2-digit',minute:'2-digit'})+' Dubai'})();
+:root{--bg:#FAF6F0;--ink:#2A211B;--mut:#7A6A5D;--line:#EADFD3;--cu:#B5703F}
+*{box-sizing:border-box;margin:0;padding:0}html,body{background:var(--bg);color:var(--ink)}
+body{font:17px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 18px) 20px 96px}
+header{display:flex;align-items:center;gap:10px;height:24px}
+header .biz{font-size:13px;color:var(--mut);letter-spacing:.02em}
+h1{font-size:32px;font-weight:600;letter-spacing:-.01em;margin-top:44px}
+.line{color:var(--mut);margin-top:10px;max-width:32ch}
+.lab{font-size:13px;color:var(--mut);margin-top:36px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.it{display:flex;gap:14px;align-items:flex-start;min-height:56px;padding:14px 0;border-bottom:1px solid var(--line);text-decoration:none;color:inherit}
+.it i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--cu);margin-top:8px}
+.it b{font-weight:600;display:block}.it b .tm{color:var(--cu)}.it small{display:block;font-size:14px;color:var(--mut);margin-top:3px}
+.it.q b{font-weight:400;color:var(--mut)}.it.q i{background:var(--line)}
+.ph{height:18px;border-radius:6px;background:var(--line);margin:19px 0;width:78%}.ph+.ph{width:62%}
+.rest{margin-top:64px}
+.counts{display:flex;gap:22px;font-size:14px;color:var(--mut);padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.counts b{color:var(--ink);font-weight:600;margin-right:4px}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}
+.links a{display:block;padding:14px;border:1px solid var(--line);border-radius:12px;color:var(--ink);text-decoration:none;font-size:15px}
+.cap{position:fixed;right:20px;bottom:calc(env(safe-area-inset-bottom) + 20px);background:var(--ink);color:var(--bg);border-radius:999px;padding:13px 20px;font-size:15px;text-decoration:none}
+/* motion (once per session) */
+.anim .a{opacity:0;animation:up .25s ease-out forwards}
+.anim .f{opacity:0;animation:fd .25s ease-out forwards}
+.anim .it{opacity:0;animation:up .2s ease-out forwards}
+.anim .rest,.anim .cap{opacity:0;animation:fd .3s ease-out 3s forwards}
+.anim .cap{visibility:hidden;animation:fdv .3s ease-out 3s forwards}
+@keyframes up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes fd{to{opacity:1}}@keyframes fdv{to{opacity:1;visibility:visible}}
+.skip *{animation-delay:0s!important;animation-duration:.01s!important}
+@media(prefers-reduced-motion:reduce){.anim *{animation:none!important;opacity:1!important;visibility:visible!important;transform:none!important}}
+@media(min-width:900px){main{padding-top:40px}h1{margin-top:72px;font-size:34px}}
+</style></head><body><main id="m">
+<header><!-- official logo slot: file not yet supplied --><span class="biz" id="biz"></span></header>
+<h1 class="a" style="animation-delay:.2s" id="g"></h1>
+<p class="line f" style="animation-delay:.9s" id="ln"></p>
+<div class="lab f" style="animation-delay:1.7s" id="lab"></div>
+<div id="items"></div>
+<section class="rest"><div class="counts" id="ct"></div>
+<nav class="links"><a href="/#/inbox">Inbox</a><a href="/#/tasks">Tasks</a><a href="/#/calendar">Calendar</a><a href="/#/followups">Follow-ups</a></nav></section>
+</main><a class="cap" href="/#/tasks">Capture</a>
+<script>
+(function(){
+/* Snapshot of Gareth's work-only Home data (26 Oct). Message bodies are not included. */
+var DATA={first:'Gareth',business:'Winterhalter',vertical:'equipment_service',tz:'Asia/Dubai',
+ meetings:[],waiting:[{title:'Reply to Peter',person:'Peter',due:'2026-10-26',ref:'#/inbox'},{title:'Purchase orders from Mohamed Hagag',person:'Mohamed Hagag',due:'2026-10-26',ref:'#/inbox'}],
+ vips:[{name:'Peter',org:''},{name:'Florian',org:''},{name:'Victor',org:''}],counts:{waiting:2,meetings:0,followups:0}};
+var LINES={equipment_service:"When a machine stops, a kitchen stops. Here\u2019s what needs you today.",holiday:"Guests arrive on their time, not yours. Here\u2019s what needs you today.",electrical:"Your day starts on site, not at a desk. Here\u2019s what needs you before you go.",adviser:"Your clients trust you with the big decisions. Here\u2019s what\u2019s ready for your eye.",general:"You run the business. Here\u2019s what needs you today, and nothing that doesn\u2019t."};
+var P=new URLSearchParams(location.search),cs=P.get('case');
+var d=JSON.parse(JSON.stringify(DATA));
+if(cs==='noname')d.first='';if(cs==='novertical')d.vertical='';if(cs==='nowaiting')d.waiting=[];if(cs==='nomeetings')d.meetings=[];
+if(cs==='meetings'||cs==='nowaiting'){var t=new Date(Date.now()+90*6e4);d.meetings=[{at:t.toISOString(),title:'Service contract review',vip:'Peter',org:'',loc:''}]}
+if(cs==='allempty'){d.waiting=[];d.meetings=[];}
+var tz=d.tz||Intl.DateTimeFormat().resolvedOptions().timeZone,$=function(i){return document.getElementById(i)};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var anim=!sessionStorage.getItem('lr_moment')&&!P.has('instant');if(P.has('replay'))anim=true;sessionStorage.setItem('lr_moment','1');
+var m=$('m');if(anim){m.classList.add('anim');document.body.classList.add('anim')}
+addEventListener('pointerdown',function(){document.body.classList.add('skip');m.classList.add('skip')},{once:true});
+var h=+new Date().toLocaleString('en-GB',{timeZone:tz,hour:'2-digit',hour12:false});
+var gw=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
+$('g').textContent=d.first?gw+', '+d.first+'.':gw+'.';
+$('ln').textContent=LINES[d.vertical]||LINES.general;
+if(d.business)$('biz').textContent=d.business;
+var hm=function(s){return new Date(s).toLocaleTimeString('en-GB',{timeZone:tz,hour:'2-digit',minute:'2-digit'})};
+var dayK=function(s){return new Date(s).toLocaleDateString('en-CA',{timeZone:tz})},today=dayK(new Date());
+function render(d){var out=[],seen={},add=function(o,who){if(out.length>=3)return;if(who){if(seen[who])return;seen[who]=1}out.push(o)};
+ var ms=(d.meetings||[]).filter(function(x){return dayK(x.at)===today}).sort(function(a,b){return new Date(a.at)-new Date(b.at)});
+ var wt=(d.waiting||[]).filter(function(x){return x.due<=today}).sort(function(a,b){return a.due<b.due?-1:1});
+ var meet=function(x){return {h:'<span class="tm">'+esc(hm(x.at))+'</span> \u00b7 '+esc(x.title),s:x.vip?'With '+esc(x.vip)+(x.org?', '+esc(x.org):''):(x.loc?esc(x.loc):''),r:'/#/calendar'}};
+ var wait=function(x){return {h:esc(x.title),s:x.due>=today?'Ready when you are':'Waiting since '+new Date(x.due).toLocaleDateString('en-GB',{weekday:'short'}),r:'/'+(x.ref||'#/home')}};
+ var nx=ms.find(function(x){var t=new Date(x.at)-Date.now();return t>-36e5&&t<4*36e5});if(nx)add(meet(nx),nx.vip);
+ wt.forEach(function(x){add(wait(x),x.person)});
+ (d.vips||[]).forEach(function(v){var n=(d.waiting||[]).filter(function(x){return x.person===v.name}).length+ms.filter(function(x){return x.vip===v.name}).length;if(n)add({h:esc(v.name)+(v.org?' \u00b7 '+esc(v.org):''),s:n+(n>1?' things':' thing')+' open with them',r:'/#/contacts'},v.name)});
+ ms.forEach(function(x){if(x!==nx)add(meet(x),x.vip)});(d.waiting||[]).forEach(function(x){add(wait(x),x.person)});
+ var q=null;if(!wt.length&&!(d.waiting||[]).length&&!ms.length)q='All clear. Nothing needs you right now.';else if(!(d.waiting||[]).length)q='Nothing\u2019s waiting on you right now.';else if(!ms.length)q='No meetings today. The day\u2019s yours.';
+ $('lab').textContent=(d.waiting||[]).length?'What needs you today':ms.length?'Today':'What needs you today';
+ var html=out.map(function(o,i){return '<a class="it" href="'+o.r+'" style="animation-delay:'+(1.85+i*.15)+'s"><i></i><div><b>'+o.h+'</b>'+(o.s?'<small>'+o.s+'</small>':'')+'</div></a>'}).join('');
+ if(q)html+='<div class="it q" style="animation-delay:'+(1.85+out.length*.15)+'s"><i></i><div><b>'+q+'</b></div></div>';
+ $('items').innerHTML=html;
+ var c=d.counts||{};$('ct').innerHTML='<span><b>'+(c.waiting||0)+'</b>waiting</span><span><b>'+(c.meetings||0)+'</b>meetings today</span><span><b>'+(c.followups||0)+'</b>follow-ups</span>'}
+if(cs==='slow'||cs==='fail'){$('lab').textContent='What needs you today';$('items').innerHTML='<div class="ph"></div><div class="ph"></div>';
+ setTimeout(function(){if(cs==='fail'){$('items').innerHTML='<div class="it q" style="animation:none;opacity:1"><i></i><div><b>Today\u2019s list will appear here shortly.</b></div></div>'}else{m.classList.remove('anim');render(d)}},cs==='fail'?2500:2500)}
+else render(d);
+})();
 </script></body></html>
